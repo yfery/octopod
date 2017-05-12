@@ -27,7 +27,16 @@ Put database into ~/.config/rusty/rusty.sqllite3
 
 - Build debian package
 - Crossbuilding arm version
+- Optimize binary
  
 ## Third party crate
 
 - [sqllite](https://github.com/dckc/rust-sqlite3)
+
+## Rust Documentation
+
+- [Taking Rust everywhere with rustup](https://blog.rust-lang.org/2016/05/13/rustup.html)
+- [sqlite3](http://www.madmode.com/rust-sqlite3/sqlite3/index.html)
+- [Rust by examples](http://rustbyexample.com/index.html)
+- [Piston engine](https://github.com/PistonDevelopers/Piston-Tutorials/tree/master/getting-started)
+- [Install Rust](https://www.rust-lang.org/fr/install.html)
