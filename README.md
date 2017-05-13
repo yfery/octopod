@@ -32,6 +32,7 @@ Put database into ~/.config/rusty/rusty.sqllite3
 ## Third party crate
 
 - [sqllite](https://github.com/dckc/rust-sqlite3)
+- [command line parsing](https://github.com/kbknapp/clap-rs)
 
 ## Rust Documentation
 
