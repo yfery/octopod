@@ -1,19 +1,33 @@
 Goal: learning Rust language
 # Rusty
-
 Command line application for managing podcast, with sqllite backend. 
 
 ## Features
+
+### V 0.1
 
 - rusty add \<url\> \[\<label\>\]: add podcast by its url with optional label
 - rusty del \<id\>: delete podcast by its id
 - rusty populate \<id\>: get podcasts list without downloading
 - rusty download-dir \<path\>: set directory path where podcast will be downloaded
+
+### V 0.2
+
+- rusty update: update list without downloading
+- rusty pending: get list of podcast not downloaded
+
+### V 0.3
+
+- rusty auto-download \<0|1\>: download podcast after update
+- rusty download: get new podcasts
+
+### V 0.4
+
 - rusty healthcheck: checkup
   - Database exists
   - Download directory exists
   - Podcast urls are reachable
-- rusty get: get new podcast
+- rusty install-cron: add command line into cron
 
 ## Database tables
 
