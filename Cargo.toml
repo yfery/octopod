@@ -1,0 +1,11 @@
+[package]
+name = "rusty"
+version = "0.1.0"
+authors = ["Yann <yann@fery.me>"]
+
+[dependencies]
+clap = { version = "2.19", features = ["yaml"]}
+rusqlite = "0.11.0"   
+slog = "2.0.5"
+slog-term = "2.0.1"
+slog-async = "2.0.1"
