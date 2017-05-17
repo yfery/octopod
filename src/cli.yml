@@ -1,0 +1,13 @@
+name: Rusty
+version: "0.1"
+author: Yann Fery <yann@fery.me>
+about: Podcast management
+args:
+subcommands:
+    - add: 
+        about: add podcast by its url with optional label
+        args:
+            - url:
+                required: true
+            - label: 
+                required: false
