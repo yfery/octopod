@@ -12,3 +12,5 @@
 /target/
 
 tags
+**/*.rs.bk
+Cargo.lock
