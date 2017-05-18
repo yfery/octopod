@@ -47,6 +47,7 @@ Put database into ~/.config/rusty/rusty.sqllite3
 
 - [sqllite](https://github.com/dckc/rust-sqlite3)
 - [command line parsing](https://github.com/kbknapp/clap-rs)
+- [rust-url](https://github.com/servo/rust-url)
 
 ## Dependencies 
 

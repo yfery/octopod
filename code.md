@@ -33,6 +33,17 @@ And if you want to use Db struct from that file
         }
     }
 
+
+## unwrap()
+
+Unwrap() is used to raise a panic error if need. For instance in this command:
+
+    connection.execute("select * where field='value'")
+
+sql query is wrong, but without unwrap(), no error is raised whereas with unwrap():
+
+    thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: SqliteFailure(Error...
+
 ## Clap, command line argument parser
 
 [github](https://github.com/kbknapp/clap-rs/)

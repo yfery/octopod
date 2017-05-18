@@ -4,7 +4,7 @@ author: Yann Fery <yann@fery.me>
 about: Podcast management
 args:
 subcommands:
-    - add: 
+    - subscribe: 
         about: add podcast by its url with optional label
         args:
             - url:
