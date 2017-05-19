@@ -119,3 +119,22 @@ Include
 
     extern crate rusqlite;
 
+## Diesel ORM
+
+Cargo dependencies 
+
+    diesel = { version = "0.13.0", features = ["sqlite"] }
+    diesel_codegen = { version = "0.13.0", features = ["sqlite"] }
+    dotenv = "0.9.0"
+
+Setup database connection url 
+
+    echo "DATABASE_URL=/tmp/rusty.sqlite3" > .env
+
+Install Diesel cli
+
+    cargo install diesel-cli --no-default-features --feature sqlite
+
+Diesel init, create migration directory and testing database connection
+
+    diesel setup
