@@ -6,9 +6,10 @@ Command line application for managing podcast, with sqllite backend.
 
 ### V 0.1
 
-- rusty add \<url\> \[\<label\>\]: add podcast by its url with optional label
-- rusty del \<id\>: delete podcast by its id
-- rusty populate \<id\>: get podcasts list without downloading
+- rusty subscribe \<url\> \[\<label\>\]: subscribe to podcast by its url with optional label
+- rusty unsubscribe \<id\>: unsubscribe to podcast by its id
+- rusty list: get podcast list
+- rusty populate \<id\>: get podcasts list without downloading and mark them as downloaded
 - rusty download-dir \<path\>: set directory path where podcast will be downloaded
 
 ### V 0.2
@@ -18,8 +19,7 @@ Command line application for managing podcast, with sqllite backend.
 
 ### V 0.3
 
-- rusty auto-download \<0|1\>: download podcast after update
-- rusty download: get new podcasts
+- rusty download \[\<id\>\]: get all pending podcasts, or one by its id 
 
 ### V 0.4
 
@@ -35,7 +35,7 @@ Put database into ~/.config/rusty/rusty.sqllite3
 
 - conf(key, value): configuration 
 - podcast(id, url, label, created_at): podcast list
-- downloaded(id, podcast_id, url, downloaded_at): list of podcast already downloaded
+- downloaded(id, podcast_id, url, downloaded, downloaded_at): list of podcast already downloaded
 
 ## Other features
 
