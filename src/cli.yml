@@ -5,9 +5,12 @@ about: Podcast management
 args:
 subcommands:
     - subscribe: 
-        about: add podcast by its url with optional label
+        about: subscribe to a podcast 
         args:
             - url:
                 required: true
             - label: 
                 required: false
+
+    - list:
+        about: list followed podcast

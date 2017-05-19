@@ -1,5 +1,5 @@
-use rusqlite::Connection;
-use podcast::Podcast;
+use rusqlite::{ Connection, MappedRows, Row };
+use schema::*;
 
 pub struct Db {
     conn: Connection
@@ -30,4 +30,31 @@ impl Db {
                     values (?1, ?2)",
                     &[&podcast.url, &podcast.label]).unwrap();
     }
+
+    //pub fn podcast_list(&self) -> MappedRows<fn(&Row) -> Podcast> {
+    pub fn podcast_list(&self) -> Result {
+        let mut stmt = self.conn.prepare("select id, url, label from podcast").unwrap();
+        let mut rows = stmt.query(&[]);
+
+        return rows;
+
+        let podcasts = stmt.query_map(&[], |row| {
+            Podcast {
+                id: row.get(0),
+                url: row.get(1),
+                label: row.get(2)
+            }
+        }).unwrap();
+
+        //return podcasts; 
+        for podcast in podcasts {
+            match podcast {
+                Ok(podcast) => println!("{}", podcast.url),
+                Err(e) => {},
+            }
+        };
+    }
+
+        /*
+        */
 }
