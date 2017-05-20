@@ -6,14 +6,11 @@ extern crate url;
 
 extern crate rusqlite;
 
-mod database;
 mod schema;
 
 use std::process;
-use std::env;
 use clap::{App, ArgMatches};
 use schema::*;
-use database::Db;
 use slog::Drain;
 use url::Url;
 use rusqlite::Connection;
@@ -27,39 +24,65 @@ fn main() {
 
     // Sqlite database
     let database_url = "/tmp/rusty.sqlite3";
-    let database = match Db::new(database_url.to_string()) {
-        Ok(database) => database,
-        Err(e) => {
+        let connection = match Connection::open(database_url) {
+            Ok(connection) => connection,
+            Err(e) =>{
             println!("Error: {} {}", e, database_url);
             process::exit(1)
         },
-    };
+        };
+        init(&connection);
 
     // Clap
     let yaml = load_yaml!("cli.yml");
     let matches = App::from_yaml(yaml).get_matches();
 
     match matches.subcommand() {
-        ("subscribe", Some(sub_matches)) => subscribe(sub_matches, &database, &_log),
-        ("list", Some(sub_matches)) => list(sub_matches, &database, &_log),
+        ("subscribe", Some(sub_matches)) => subscribe(sub_matches, &connection, &_log),
+        ("list", Some(_)) => list(&connection),
         ("", None) => println!("No subcommand was used"),
         _ => println!("No!"),
     }
 }
 
-fn subscribe(args: &ArgMatches, connection: &database::Db, logger: &slog::Logger) {
+    fn init(connection: &Connection) {
+
+        connection.execute("create table if not exists podcast (
+                    id integer primary key autoincrement,
+                    url text not null,
+                    label text not null, 
+                    created_at timestamp default current_timestamp)", &[]).unwrap();
+    }
+
+fn subscribe(args: &ArgMatches, connection: &Connection, logger: &slog::Logger) {
     match Url::parse(args.value_of("url").unwrap()) {
         Ok(url) => {
             let podcast = Podcast { id: 0, url: url.as_str().to_string(), label: args.value_of("label").unwrap_or("").to_string()};
-            connection.subscribe_to_podcast(&podcast);
+            connection.execute("insert into podcast (url, label)
+                    values (?1, ?2)",
+                    &[&podcast.url, &podcast.label]).unwrap();
             info!(logger, "Subscribed to: {}", podcast.url;);
         }
         Err(e) => error!(logger, "Could not parse url '{}' {}", args.value_of("url").unwrap(), e),
     }
 }
 
+fn list(connection: &Connection) {
+        let mut stmt = connection.prepare("select id, url, label from podcast").unwrap();
 
-fn list(args: &ArgMatches, connection: &database::Db, logger: &slog::Logger) {
-    connection.podcast_list();
+        let podcasts = stmt.query_map(&[], |row| {
+            Podcast {
+                id: row.get(0),
+                url: row.get(1),
+                label: row.get(2)
+            }
+        }).unwrap();
+
+        for podcast in podcasts {
+            match podcast {
+                Ok(podcast) => println!("{}", podcast.url),
+                Err(e) => println!("{}", e) ,
+            }
+        };
 }
 
