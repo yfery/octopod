@@ -12,5 +12,10 @@ subcommands:
             - label: 
                 required: false
 
+    - unsubscribe: 
+        about: unsubscribe from a podcast 
+        args:
+            - id:
+                required: true
     - list:
         about: list followed podcast
