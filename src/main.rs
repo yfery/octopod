@@ -37,7 +37,7 @@ fn main() {
 }
 
 fn init(connection: &Connection) {
-    connection.execute(include_str!("init.sql"), &[]).unwrap();
+    connection.execute(include_str!("sql/init.sql"), &[]).unwrap();
 }
 
 fn subscribe(args: &ArgMatches, connection: &Connection) {
@@ -53,8 +53,17 @@ fn subscribe(args: &ArgMatches, connection: &Connection) {
 
 fn unsubscribe(args: &ArgMatches, connection: &Connection) {
     let id = args.value_of("id").unwrap();
-    connection.execute("delete from podcast where id = ?1", &[&id]).unwrap();
-    println!("Unsubscribed to: {}", id);
+
+    let mut stmt = connection.prepare("select id, url, label from podcast where id = ?1").unwrap();
+    let mut rows = stmt.query_map(&[&id], Podcast::map).unwrap();
+    match rows.next() {
+        Some(row) => {
+            let podcast = row.unwrap();
+            connection.execute("delete from podcast where id = ?1", &[&id]).unwrap();
+            println!("Unsubscribed from: {}", podcast.url);
+        },
+        None => println!("Podcast doesn't exist"),
+    }
 }
 
 fn list(connection: &Connection) {
@@ -62,8 +71,8 @@ fn list(connection: &Connection) {
 
     let rows = stmt.query_map(&[], Podcast::map).unwrap();
     for row in rows {
-        let result = row.unwrap();
-        println!("- {}: {}", result.id, result.url);
+        let podcast = row.unwrap();
+        println!("- {}: {}", podcast.id, podcast.url);
     }
 }
 
