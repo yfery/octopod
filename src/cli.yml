@@ -35,5 +35,10 @@ subcommands:
     - l:
         about: list followed podcast
 
+    - pending:
+        about: list followed podcast
+    - t:
+        about: list followed podcast
+
     - p:
         about: populate podcast list

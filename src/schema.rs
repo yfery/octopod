@@ -36,3 +36,14 @@ pub struct Podcast {
     pub url:  String,
     pub filename: String,
 }
+
+impl Podcast {
+    pub fn map(row: &Row) -> Podcast {
+        Podcast {
+            id: row.get(0),
+            subscription_id: row.get(1),
+            url: row.get(2),
+            filename: row.get(3)
+        }
+    }
+}

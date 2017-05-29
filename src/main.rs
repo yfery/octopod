@@ -35,6 +35,7 @@ fn main() {
         ("unsubscribe", Some(sub_matches)) | ("u", Some(sub_matches)) => unsubscribe(sub_matches, &connection),
         ("list", Some(_)) | ("l", Some(_)) => list(&connection),
         ("populate", Some(_)) | ("p", Some(_)) => populate(&connection),
+        ("pending", Some(_)) | ("t", Some(_)) => pending(&connection),
         ("", None) => println!("No subcommand was used"),
         _ => println!("No!"),
     }
@@ -125,3 +126,11 @@ fn populate(connection: &Connection) {
 
 }
 
+fn pending(connection: &Connection) {
+    let mut stmt = connection.prepare("select id, subscription_id, url, filename from podcast where downloaded = 0").unwrap();
+
+    for row in stmt.query_map(&[], Podcast::map).unwrap(){
+        let podcast = row.unwrap();
+        println!("- {}: {}", podcast.id, podcast.url);
+    }
+}
