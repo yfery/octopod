@@ -37,6 +37,7 @@ fn main() {
         ("update", Some(sub_matches)) => update(sub_matches, &connection, 0),
         ("populate", Some(sub_matches)) => update(sub_matches, &connection, 1),
         ("pending", Some(_)) => pending(&connection),
+        ("download-dir", Some(sub_matches)) => downloaddir(sub_matches, &connection),
         ("", None) => println!("No subcommand was used"),
         _ => println!("No!"),
     }
@@ -117,7 +118,7 @@ fn update(args: &ArgMatches, connection: &Connection, populate: i32) {
             // create filename
             let mut filename = String::new();
             for segment in path_segments {
-                if segment == "enclosure.mp3" || segment == "listen.mp3" {
+                if segment == "enclosure.mp3" || segment == "listen.mp3" {
                     filename = filename + ".mp3";
                     break;
                 }
@@ -140,4 +141,10 @@ fn pending(connection: &Connection) {
         let podcast = row.unwrap();
         println!("- {}: {}", podcast.id, podcast.url);
     }
+}
+
+fn downloaddir(args: &ArgMatches, connection: &Connection) {
+    let path = args.value_of("path").unwrap(); 
+    connection.execute("insert or replace into config (key, value) values ('downloaddir', ?1)", &[&path]).unwrap();
+    println!("Download dir set to: {}", path);
 }

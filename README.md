@@ -1,6 +1,6 @@
 Goal: learning Rust language
 # Rusty
-Command line application for managing podcast, with sqllite backend. 
+Command line application for managing podcast feeds, with sqllite backend. 
 
 ## Features
 
@@ -24,15 +24,14 @@ Command line application for managing podcast, with sqllite backend.
   - Database exists
   - Download directory exists
   - Podcast urls are reachable
-- rusty install-cron: add command line into cron
 
 ## Database tables
 
 Put database into ~/.config/rusty/rusty.sqllite3
 
-- conf(key, value): configuration 
-- podcast(id, url, label, created_at): podcast list
-- downloaded(id, podcast_id, url, downloaded, downloaded_at): list of podcast already downloaded
+- confg(key, value): configuration 
+- subscription(id, url, label, created_at): feed list
+- podcast(id, podcast_id, url, downloaded, downloaded_at): list of podcast 
 
 ## Other features
 
@@ -42,10 +41,10 @@ Put database into ~/.config/rusty/rusty.sqllite3
  
 ## Third party crate
 
-- [sqllite](https://github.com/dckc/rust-sqlite3)
-- [command line parsing](https://github.com/kbknapp/clap-rs)
-- [rust-url](https://github.com/servo/rust-url)
-- [diesel](https://github.com/diesel-rs/diesel)
+- [sqllite](https://github.com/dckc/rust-sqlite3): sqlite3 wrapper
+- [command line parsing](https://github.com/kbknapp/clap-rs): argument parser
+- [rust-url](https://github.com/servo/rust-url): url handling
+- [hyper](https://hyper.rs/hyper/v0.10.9/hyper/): http client
 
 ## Dependencies 
 

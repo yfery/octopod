@@ -35,3 +35,9 @@ subcommands:
         args:
             - id:
                 required: false
+
+    - download-dir:
+        about: set directory where podcast will be downloaded
+        args:
+            - path:
+                required: true
