@@ -11,20 +11,8 @@ subcommands:
                 required: true
             - label: 
                 required: false
-    - s:
-        about: subscribe to a podcast 
-        args:
-            - url:
-                required: true
-            - label: 
-                required: false
 
     - unsubscribe: 
-        about: unsubscribe from a podcast 
-        args:
-            - id:
-                required: true
-    - u:
         about: unsubscribe from a podcast 
         args:
             - id:
@@ -32,13 +20,18 @@ subcommands:
 
     - list:
         about: list followed podcast
-    - l:
-        about: list followed podcast
 
     - pending:
         about: list followed podcast
-    - t:
-        about: list followed podcast
 
-    - p:
+    - update:
+        about: update podcast list
+        args:
+            - id:
+                required: false
+
+    - populate:
         about: populate podcast list
+        args:
+            - id:
+                required: false

@@ -31,11 +31,12 @@ fn main() {
     let matches = App::from_yaml(yaml).get_matches();
 
     match matches.subcommand() {
-        ("subscribe", Some(sub_matches)) | ("s", Some(sub_matches)) => subscribe(sub_matches, &connection),
-        ("unsubscribe", Some(sub_matches)) | ("u", Some(sub_matches)) => unsubscribe(sub_matches, &connection),
-        ("list", Some(_)) | ("l", Some(_)) => list(&connection),
-        ("populate", Some(_)) | ("p", Some(_)) => populate(&connection),
-        ("pending", Some(_)) | ("t", Some(_)) => pending(&connection),
+        ("subscribe", Some(sub_matches)) => subscribe(sub_matches, &connection),
+        ("unsubscribe", Some(sub_matches)) => unsubscribe(sub_matches, &connection),
+        ("list", Some(_)) => list(&connection),
+        ("update", Some(sub_matches)) => update(sub_matches, &connection, 0),
+        ("populate", Some(sub_matches)) => update(sub_matches, &connection, 1),
+        ("pending", Some(_)) => pending(&connection),
         ("", None) => println!("No subcommand was used"),
         _ => println!("No!"),
     }
@@ -87,17 +88,23 @@ fn list(connection: &Connection) {
     }
 }
 
-fn populate(connection: &Connection) {
+fn update(args: &ArgMatches, connection: &Connection, populate: i32) {
     use hyper::Client; // https://hyper.rs/hyper/v0.10.9/hyper/index.html
     use std::io::Read; // needed for read_to_string trait
     use std::str::FromStr; // needed for FromStr trait on Channel
     use rss::Channel;
 
+    let id = args.value_of("id").unwrap_or("0").parse::<i32>().unwrap();
     let mut stmt = connection.prepare("select id, url, label from subscription").unwrap();
     let client = Client::new(); // create http client
 
     for row in stmt.query_map(&[], Subscription::map).unwrap() {
         let subscription = row.unwrap();
+
+        if id != subscription.id && id > 0 { // if an id is set, update/populate only this id
+            continue;
+        }
+
         let mut res = client.get(subscription.clone()).send().unwrap(); // get query result thanks to IntoUrl trait implement for Subscription
         let mut body = String::new();
         res.read_to_string(&mut body).unwrap(); // extract body from query result
@@ -110,7 +117,7 @@ fn populate(connection: &Connection) {
             // create filename
             let mut filename = String::new();
             for segment in path_segments {
-                if segment == "enclosure.mp3" {
+                if segment == "enclosure.mp3" || segment == "listen.mp3" {
                     filename = filename + ".mp3";
                     break;
                 }
@@ -118,7 +125,7 @@ fn populate(connection: &Connection) {
             }
 
             let podcast = Podcast { id: 0, subscription_id: subscription.id, url: url.as_str().to_string(), filename: filename};
-            connection.execute("insert or ignore into podcast (subscription_id, url, filename) values (?1, ?2, ?3)", &[&podcast.subscription_id, &podcast.url, &podcast.filename]).unwrap();
+            connection.execute("insert or ignore into podcast (subscription_id, url, filename, downloaded) values (?1, ?2, ?3, ?4)", &[&podcast.subscription_id, &podcast.url, &podcast.filename, &populate]).unwrap();
             println!("{:?}", podcast.filename);
 
         }
