@@ -21,5 +21,3 @@ create table if not exists config (
     value text,
     unique(key)
 );
-
-insert into config (key, value) values ("downloaddir", "");

@@ -41,3 +41,6 @@ subcommands:
         args:
             - path:
                 required: true
+
+    - download:
+        about: download pending files

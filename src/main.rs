@@ -2,7 +2,7 @@
 extern crate url;
 extern crate rss;
 extern crate hyper;
-
+extern crate curl; // https://docs.rs/curl/0.4.6/curl/easy/
 extern crate rusqlite;
 
 mod schema;
@@ -12,6 +12,7 @@ use clap::{App, ArgMatches};
 use schema::*;
 use url::Url;
 use rusqlite::Connection;
+use curl::easy::Easy;
 
 
 fn main() {
@@ -37,6 +38,7 @@ fn main() {
         ("update", Some(sub_matches)) => update(sub_matches, &connection, 0),
         ("populate", Some(sub_matches)) => update(sub_matches, &connection, 1),
         ("pending", Some(_)) => pending(&connection),
+        ("download", Some(_)) => download(&connection),
         ("download-dir", Some(sub_matches)) => downloaddir(sub_matches, &connection),
         ("", None) => println!("No subcommand was used"),
         _ => println!("No!"),
@@ -131,7 +133,6 @@ fn update(args: &ArgMatches, connection: &Connection, populate: i32) {
 
         }
     }
-
 }
 
 fn pending(connection: &Connection) {
@@ -147,4 +148,39 @@ fn downloaddir(args: &ArgMatches, connection: &Connection) {
     let path = args.value_of("path").unwrap(); 
     connection.execute("insert or replace into config (key, value) values ('downloaddir', ?1)", &[&path]).unwrap();
     println!("Download dir set to: {}", path);
+}
+
+fn download(connection: &Connection) {
+    use std::path::Path;
+    use std::fs::File;
+    use std::io::Write;
+    use std::ops::Mul;
+    let mut curl = Easy::new();
+
+    curl.progress(true).unwrap();
+    curl.follow_location(true).unwrap();
+    curl.progress_function( |a, b, _, _| {
+        print!(" Downloading: {}% \r", (b.mul(100_f64)/a).floor());
+        true
+    }).unwrap();
+    let mut stmt = connection.prepare("select id, subscription_id, url, filename from podcast where downloaded = 0").unwrap();
+
+    for row in stmt.query_map(&[], Podcast::map).unwrap(){
+        let podcast = row.unwrap();
+        let temp = "/tmp/".to_string() + podcast.filename.as_str();
+        let path = Path::new(&temp);
+
+        let mut file = match File::create(&path) {
+            Err(why) => panic!("couldn't create {}",
+                               why),
+            Ok(file) => file,
+        };
+        curl.url(&podcast.url).unwrap();
+        curl.write_function( move |data| {
+            Ok(file.write(data).unwrap())
+        }).unwrap();
+        println!("{}", podcast.url);
+        curl.perform().unwrap();
+        connection.execute("update podcast set downloaded = 1, downloaded_at = current_timestamp where id = ?1", &[&podcast.id]).unwrap();
+    }
 }
