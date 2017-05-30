@@ -6,11 +6,7 @@ authors = ["Yann <yann@fery.me>"]
 [dependencies]
 clap = { version = "2.19", features = ["yaml"]}
 rusqlite = "0.11.0"   
-slog = "2.0.5"
-slog-term = "2.0.1"
-slog-async = "2.0.1"
 url = "1.4.0"
-dotenv = "0.9.0"
 curl = "0.4.6"
 rss = "0.5"
 hyper = "0.10.10"
