@@ -6,6 +6,7 @@ extern crate curl; // https://docs.rs/curl/0.4.6/curl/easy/
 extern crate rusqlite;
 
 mod schema;
+mod common;
 
 use std::process;
 use clap::{App, ArgMatches};
@@ -14,8 +15,8 @@ use url::Url;
 use rusqlite::Connection;
 use curl::easy::Easy;
 
-
 fn main() {
+    let lock_socket = common::create_app_lock(12345); // https://rosettacode.org/wiki/Category:Rust
     // Sqlite database
     let database_url = "/tmp/rusty.sqlite3";
     let connection = match Connection::open(database_url) {
@@ -25,7 +26,7 @@ fn main() {
             process::exit(1)
         },
     };
-    init(&connection);
+    init(&connection); // Initialize database
 
     // Clap
     let yaml = load_yaml!("cli.yml");
@@ -43,6 +44,8 @@ fn main() {
         ("", None) => println!("No subcommand was used"),
         _ => println!("No!"),
     }
+
+    common::remove_app_lock(lock_socket);
 }
 
 fn init(connection: &Connection) {
