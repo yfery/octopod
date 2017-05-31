@@ -36,8 +36,7 @@ fn main() {
         ("subscribe", Some(sub_matches)) => subscribe(sub_matches, &connection),
         ("unsubscribe", Some(sub_matches)) => unsubscribe(sub_matches, &connection),
         ("list", Some(_)) => list(&connection),
-        ("update", Some(sub_matches)) => update(sub_matches, &connection, 0),
-        ("populate", Some(sub_matches)) => update(sub_matches, &connection, 1),
+        ("update", Some(sub_matches)) => update(sub_matches, &connection),
         ("pending", Some(_)) => pending(&connection),
         ("download", Some(_)) => download(&connection),
         ("download-dir", Some(sub_matches)) => downloaddir(sub_matches, &connection),
@@ -62,9 +61,10 @@ fn init(connection: &Connection) {
 fn subscribe(args: &ArgMatches, connection: &Connection) {
     match Url::parse(args.value_of("url").unwrap()) {
         Ok(url) => {
-            let subscription = Subscription { id: 0, url: url.as_str().to_string(), label: args.value_of("label").unwrap_or("").to_string()};
-            connection.execute("insert into subscription (url, label) values (?1, ?2)", &[&subscription.url, &subscription.label]).unwrap();
+            let subscription = Subscription { id: 0, url: url.as_str().to_string(), label: String::new()};
+            connection.execute("insert into subscription (url, label) values (?1, '')", &[&subscription.url]).unwrap();
             println!("Subscribed to: {}", subscription.url);
+            update(args, connection); 
         }
         Err(e) => println!("Could not parse url '{}' {}", args.value_of("url").unwrap(), e),
     }
@@ -94,7 +94,7 @@ fn list(connection: &Connection) {
     }
 }
 
-fn update(args: &ArgMatches, connection: &Connection, populate: i32) {
+fn update(args: &ArgMatches, connection: &Connection) {
     use hyper::Client; // https://hyper.rs/hyper/v0.10.9/hyper/index.html
     use std::io::Read; // needed for read_to_string trait
     use std::str::FromStr; // needed for FromStr trait on Channel
@@ -103,6 +103,13 @@ fn update(args: &ArgMatches, connection: &Connection, populate: i32) {
     let id = args.value_of("id").unwrap_or("0").parse::<i32>().unwrap();
     let mut stmt = connection.prepare("select id, url, label from subscription").unwrap();
     let client = Client::new(); // create http client
+
+    println!("{:?}", args.is_present("as-downloaded"));
+
+    let mut as_downloaded = 0;
+    if args.is_present("as-downloaded") {
+        as_downloaded = 1;
+    }
 
     for row in stmt.query_map(&[], Subscription::map).unwrap() {
         let subscription = row.unwrap();
@@ -116,6 +123,7 @@ fn update(args: &ArgMatches, connection: &Connection, populate: i32) {
         res.read_to_string(&mut body).unwrap(); // extract body from query result
 
         let channel = Channel::from_str(&body).unwrap(); // parse rss into channel
+        connection.execute("update subscription set label = ?1", &[&channel.title()]).unwrap(); // update podcast feed name
         for item in channel.items() {
             let url = Url::parse(item.enclosure().unwrap().url()).unwrap();
             let  path_segments = url.path_segments().unwrap();
@@ -131,7 +139,7 @@ fn update(args: &ArgMatches, connection: &Connection, populate: i32) {
             }
 
             let podcast = Podcast { id: 0, subscription_id: subscription.id, url: url.as_str().to_string(), filename: filename};
-            connection.execute("insert or ignore into podcast (subscription_id, url, filename, downloaded) values (?1, ?2, ?3, ?4)", &[&podcast.subscription_id, &podcast.url, &podcast.filename, &populate]).unwrap();
+            connection.execute("insert or ignore into podcast (subscription_id, url, filename, downloaded) values (?1, ?2, ?3, ?4)", &[&podcast.subscription_id, &podcast.url, &podcast.filename, &as_downloaded]).unwrap();
             println!("{:?}", podcast.filename);
 
         }

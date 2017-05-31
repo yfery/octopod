@@ -3,6 +3,9 @@ version: "0.1"
 author: Yann Fery <yann@fery.me>
 about: Podcast management
 args:
+    - verbose:
+        short: v
+        help: Sets the level of verbosity
 subcommands:
     - subscribe: 
         about: subscribe to a podcast 
@@ -11,6 +14,9 @@ subcommands:
                 required: true
             - label: 
                 required: false
+            - as-downloaded:
+                short: d
+                help: Sets new podcast as downloaded
 
     - unsubscribe: 
         about: unsubscribe from a podcast 
@@ -29,12 +35,9 @@ subcommands:
         args:
             - id:
                 required: false
-
-    - populate:
-        about: populate podcast list
-        args:
-            - id:
-                required: false
+            - as-downloaded:
+                short: d
+                help: Sets new podcast as downloaded
 
     - download-dir:
         about: set directory where podcast will be downloaded

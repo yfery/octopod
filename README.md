@@ -1,22 +1,22 @@
 Goal: learning Rust language
+
 # Rusty
-Command line application for managing podcast feeds, with sqllite backend. 
+
+Command line application for managing podcast feeds, with sqlite backend. 
 
 ## Features
 
 ### V 0.1
 
-- rusty subscribe \<url\> \[\<label\>\]: subscribe to a podcast feed by its url with optional label
+- rusty subscribe \[-d\] \<url\>: subscribe to a podcast feed by its url 
 - rusty unsubscribe \<id\>: unsubscribe to a podcast feed by its id
 - rusty list: get podcast feed list
-- rusty update \[\<id\>\]: get podcasts list without downloading, if an id is set update only this feed
-- rusty populate \[\<id\>\]: get podcasts list without downloading and mark them as downloaded, if an id is set populate only this feed
+- rusty update \[-d\] \[\<id\>\]: get podcasts list without downloading, if an id is set update only this feed
 - rusty pending: get list of podcast not downloaded
-
-### V 0.3
-
 - rusty download-dir \<path\>: set directory path where podcast will be downloaded
 - rusty download \[\<id\>\]: get all pending podcasts, or one by its id 
+
+- -d: treat new podcast as downloaded
 
 ### V 0.4
 

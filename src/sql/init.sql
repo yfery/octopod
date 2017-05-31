@@ -2,7 +2,8 @@ create table if not exists subscription (
     id integer primary key autoincrement,
     url text not null,
     label text not null, 
-    created_at timestamp default current_timestamp
+    created_at timestamp default current_timestamp,
+    unique(url)
 );
 
 create table if not exists podcast (
@@ -13,7 +14,7 @@ create table if not exists podcast (
     downloaded integer default 0,
     downloaded_at timestamp,
     created_at timestamp default current_timestamp,
-    UNIQUE(url)
+    unique(url)
 );
 
 create table if not exists config (
