@@ -6,7 +6,7 @@ use hyper::client::IntoUrl;
 // derive allow use of unwrap() on Subscription
 #[derive(Debug, Clone)]
 pub struct Subscription {
-    pub id: i32,
+    pub id: i64,
     pub url:  String,
     pub label: String,
 }
@@ -31,8 +31,8 @@ impl IntoUrl for Subscription {
 
 #[derive(Debug)]
 pub struct Podcast {
-    pub id: i32,
-    pub subscription_id: i32,
+    pub id: i64,
+    pub subscription_id: i64,
     pub url:  String,
     pub filename: String,
 }
