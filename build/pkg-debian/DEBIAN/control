@@ -1,0 +1,6 @@
+Package: rusty
+Version: 0.1
+Maintainer: Yann Fery yann@fery.me
+Priority: optional
+Architecture: all
+Description: Managing podcast feeds
