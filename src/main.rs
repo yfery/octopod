@@ -14,15 +14,22 @@ use schema::*;
 use url::Url;
 use rusqlite::Connection;
 use curl::easy::Easy;
+use std::path::{Path};
+use std::fs::{File, create_dir};
+use std::env::home_dir;
 
 fn main() {
     let lock_socket = common::create_app_lock(12345); // https://rosettacode.org/wiki/Category:Rust
-    // Sqlite database
-    let database_url = "/tmp/rusty.sqlite3";
-    let connection = match Connection::open(database_url) {
+    // Init Sqlite database
+    let db_path = home_dir().expect("/tmp/").into_os_string().into_string().unwrap() + "/.config/rusty";
+    if !Path::new(&db_path).exists() { // If path doesn't exist we create it
+        create_dir(&db_path).unwrap();
+    }
+    let database_url = db_path + "/rusty.sqlite3";
+    let connection = match Connection::open(&database_url) {
         Ok(connection) => connection,
         Err(e) => {
-            println!(_log, "Error database connection: {} {}", e, database_url;);
+            println!("Error database connection: {} {}", e, database_url);
             process::exit(1)
         }
     };
@@ -33,12 +40,12 @@ fn main() {
     let matches = App::from_yaml(yaml).get_matches();
 
     match matches.subcommand() {
-        ("subscribe", Some(sub_matches)) => subscribe(sub_matches, &connection, _log),
+        ("subscribe", Some(sub_matches)) => subscribe(sub_matches, &connection),
         ("unsubscribe", Some(sub_matches)) => unsubscribe(sub_matches, &connection),
-        ("list", Some(_)) => list(&connection, _log),
+        ("list", Some(_)) => list(&connection),
         ("update", Some(sub_matches)) => {
             let feed_id = sub_matches.value_of("id").unwrap_or("0").parse::<i64>().unwrap();
-            update(sub_matches, &connection, _log, feed_id);
+            update(sub_matches, &connection, feed_id);
         },
         ("pending", Some(_)) => pending(&connection),
         ("download", Some(_)) => download(&connection),
@@ -61,13 +68,13 @@ fn init(connection: &Connection) {
     }
 }
 
-fn subscribe(args: &ArgMatches, connection: &Connection, _log: slog::Logger) {
+fn subscribe(args: &ArgMatches, connection: &Connection) {
     match Url::parse(args.value_of("url").unwrap()) {
         Ok(url) => {
             let subscription = Subscription { id: 0, url: url.as_str().to_string(), label: String::new()};
             connection.execute("insert into subscription (url, label) values (?1, '')", &[&subscription.url]).unwrap();
             println!("Subscribing to: {}", subscription.url);
-            update(args, connection, _log, connection.last_insert_rowid()); 
+            update(args, connection, connection.last_insert_rowid()); 
             println!("Subscribed");
         }
         Err(e) => println!("Could not parse url '{}' {}", args.value_of("url").unwrap(), e),
@@ -98,17 +105,21 @@ fn unsubscribe(args: &ArgMatches, connection: &Connection) {
     }
 }
 
-fn list(connection: &Connection, _log: slog::Logger) {
+fn list(connection: &Connection) {
     let mut stmt = connection.prepare("select id, url, label from subscription").unwrap();
 
     println!("Subscriptions list:");
-    for row in stmt.query_map(&[], Subscription::map).unwrap(){
+    if !stmt.exists(&[]).unwrap() {
+        println!("{}", "    No subscription");
+    }
+
+    for row in stmt.query_map(&[], Subscription::map).unwrap() {
         let subscription = row.unwrap();
         println!("    {}: {} ({})", subscription.id, subscription.label, subscription.url);
     }
 }
 
-fn update(args: &ArgMatches, connection: &Connection, _log: slog::Logger, feed_id: i64) {
+fn update(args: &ArgMatches, connection: &Connection, feed_id: i64) {
     use hyper::Client; // https://hyper.rs/hyper/v0.10.9/hyper/index.html
     use std::io::Read; // needed for read_to_string trait
     use std::str::FromStr; // needed for FromStr trait on Channel
@@ -166,6 +177,9 @@ fn pending(connection: &Connection) {
     let mut stmt = connection.prepare("select id, subscription_id, url, filename from podcast where downloaded = 0").unwrap();
 
     println!("Pending list:");
+    if !stmt.exists(&[]).unwrap() {
+        println!("{}", "    Nothing to download");
+    }
     for row in stmt.query_map(&[], Podcast::map).unwrap(){
         let podcast = row.unwrap();
         println!("    {} ({})", podcast.filename, podcast.url);
@@ -179,8 +193,6 @@ fn downloaddir(args: &ArgMatches, connection: &Connection) {
 }
 
 fn download(connection: &Connection) {
-    use std::path::Path;
-    use std::fs::File;
     use std::io::Write;
     use std::ops::Mul;
     let mut curl = Easy::new();
@@ -194,6 +206,9 @@ fn download(connection: &Connection) {
     let mut stmt = connection.prepare("select id, subscription_id, url, filename from podcast where downloaded = 0").unwrap();
 
     println!("Download pending podcast:");
+    if !stmt.exists(&[]).unwrap() {
+        println!("{}", "    Nothing to download");
+    }
     for row in stmt.query_map(&[], Podcast::map).unwrap(){
         let podcast = row.unwrap();
         let temp = "/tmp/".to_string() + podcast.filename.as_str();
