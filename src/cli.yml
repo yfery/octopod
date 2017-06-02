@@ -5,7 +5,13 @@ about: Podcast management
 args:
     - verbose:
         short: v
+        long: verbose
         help: Sets the level of verbosity
+    - database:
+        long: database
+        help: Sets database path
+        value_name: PATH
+        takes_value: true
 subcommands:
     - subscribe: 
         about: subscribe to a podcast 
@@ -17,19 +23,15 @@ subcommands:
             - as-downloaded:
                 short: d
                 help: Sets new podcast as downloaded
-
     - unsubscribe: 
         about: unsubscribe from a podcast 
         args:
             - id:
                 required: true
-
     - list:
         about: list followed podcast
-
     - pending:
         about: list followed podcast
-
     - update:
         about: update podcast list
         args:
@@ -38,12 +40,10 @@ subcommands:
             - as-downloaded:
                 short: d
                 help: Sets new podcast as downloaded
-
     - download-dir:
         about: set directory where podcast will be downloaded
         args:
             - path:
                 required: true
-
     - download:
         about: download pending files

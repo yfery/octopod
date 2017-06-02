@@ -20,12 +20,23 @@ use std::env::home_dir;
 
 fn main() {
     let lock_socket = common::create_app_lock(12345); // https://rosettacode.org/wiki/Category:Rust
+
+    // Clap
+    let yaml = load_yaml!("cli.yml");
+    let matches = App::from_yaml(yaml).get_matches();
+
     // Init Sqlite database
-    let db_path = home_dir().expect("/tmp/").into_os_string().into_string().unwrap() + "/.config/rusty";
-    if !Path::new(&db_path).exists() { // If path doesn't exist we create it
-        create_dir(&db_path).unwrap();
+    let mut database_url = String::new();
+
+    if matches.is_present("database") { // get path from command line 
+        database_url = matches.value_of("database").unwrap().to_string();
+    } else { // or put database file into ~/.config/rusty/rusty.sqlite3
+        let db_path = home_dir().expect("/tmp/").into_os_string().into_string().unwrap() + "/.config/rusty";
+        if !Path::new(&db_path).exists() { // If path doesn't exist we create it
+            create_dir(&db_path).unwrap();
+        }
+        database_url = db_path + "/rusty.sqlite3";
     }
-    let database_url = db_path + "/rusty.sqlite3";
     let connection = match Connection::open(&database_url) {
         Ok(connection) => connection,
         Err(e) => {
@@ -34,10 +45,6 @@ fn main() {
         }
     };
     init(&connection); // Initialize database
-
-    // Clap
-    let yaml = load_yaml!("cli.yml");
-    let matches = App::from_yaml(yaml).get_matches();
 
     match matches.subcommand() {
         ("subscribe", Some(sub_matches)) => subscribe(sub_matches, &connection),
