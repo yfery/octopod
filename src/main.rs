@@ -79,8 +79,15 @@ fn subscribe(args: &ArgMatches, connection: &Connection) {
     match Url::parse(args.value_of("url").unwrap()) {
         Ok(url) => {
             let subscription = Subscription { id: 0, url: url.as_str().to_string(), label: String::new()};
-            connection.execute("insert into subscription (url, label) values (?1, '')", &[&subscription.url]).unwrap();
             println!("Subscribing to: {}", subscription.url);
+
+            let mut stmt = connection.prepare("select * from subscription where url = ?1").unwrap();
+            if !stmt.exists(&[&subscription.url]).unwrap() {
+                connection.execute("insert into subscription (url, label) values (?1, '')", &[&subscription.url]).unwrap();
+            } else {
+                println!("    Feed already subscribed to");
+                return
+            }
             update(args, connection, connection.last_insert_rowid()); 
             println!("Subscribed");
         }
