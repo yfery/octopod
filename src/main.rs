@@ -163,13 +163,14 @@ fn update(args: &ArgMatches, connection: &Connection, feed_id: i64) {
 
         let mut res = client.get(subscription.clone()).send().unwrap(); // get query result thanks to IntoUrl trait implement for Subscription
         let mut body = String::new();
+        let mut previous_insert_rowid: i64 = 0;
         res.read_to_string(&mut body).unwrap(); // extract body from query result
 
         let channel = Channel::from_str(&body).unwrap(); // parse rss into channel
         connection.execute("update subscription set label = ?1 where id = ?2", &[&channel.title(), &subscription.id]).unwrap(); // update podcast feed name
         for item in channel.items() {
             let url = Url::parse(item.enclosure().unwrap().url()).unwrap();
-            let  path_segments = url.path_segments().unwrap();
+            let path_segments = url.path_segments().unwrap();
 
             // create filename
             let mut filename = String::new();
@@ -182,12 +183,11 @@ fn update(args: &ArgMatches, connection: &Connection, feed_id: i64) {
             }
 
             let podcast = Podcast { id: 0, subscription_id: subscription.id, url: url.as_str().to_string(), filename: filename};
-            let previous_insert_rowid = connection.last_insert_rowid();
             connection.execute("insert or ignore into podcast (subscription_id, url, filename, downloaded) values (?1, ?2, ?3, ?4)", &[&podcast.subscription_id, &podcast.url, &podcast.filename, &as_downloaded]).unwrap();
             if previous_insert_rowid != connection.last_insert_rowid() {
                 println!("    New podcast added: {:?}", podcast.filename);
             }
-
+            previous_insert_rowid = connection.last_insert_rowid();
         }
         println!("Updated");
     }
