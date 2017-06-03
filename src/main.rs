@@ -2,6 +2,7 @@
 extern crate url;
 extern crate rss;
 extern crate hyper;
+extern crate hyper_native_tls;
 extern crate curl; // https://docs.rs/curl/0.4.6/curl/easy/
 extern crate rusqlite;
 
@@ -135,12 +136,16 @@ fn list(connection: &Connection) {
 
 fn update(args: &ArgMatches, connection: &Connection, feed_id: i64) {
     use hyper::Client; // https://hyper.rs/hyper/v0.10.9/hyper/index.html
+    use hyper::net::HttpsConnector;
+    use hyper_native_tls::NativeTlsClient;
     use std::io::Read; // needed for read_to_string trait
     use std::str::FromStr; // needed for FromStr trait on Channel
     use rss::Channel;
 
     let mut stmt = connection.prepare("select id, url, label from subscription").unwrap();
-    let client = Client::new(); // create http client
+     let ssl = NativeTlsClient::new().unwrap();
+    let connector = HttpsConnector::new(ssl);
+    let client = Client::with_connector(connector); // create http client with tls support
 
     let mut as_downloaded = 0;
     if args.is_present("as-downloaded") {
@@ -149,11 +154,12 @@ fn update(args: &ArgMatches, connection: &Connection, feed_id: i64) {
 
     for row in stmt.query_map(&[], Subscription::map).unwrap() {
         let subscription = row.unwrap();
-        println!("Updating {}:", subscription.label);
 
         if feed_id != subscription.id && feed_id > 0 { // if an id is set, update/populate only this id
             continue;
         }
+
+        println!("Updating {}:", subscription.label);
 
         let mut res = client.get(subscription.clone()).send().unwrap(); // get query result thanks to IntoUrl trait implement for Subscription
         let mut body = String::new();
