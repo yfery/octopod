@@ -16,7 +16,7 @@ Command line application for managing podcast feeds, with sqlite backend.
 - rusty download-dir \<path\>: set directory path where podcast will be downloaded
 - rusty download \[\<id\>\]: get all pending podcasts, or one by its id 
 
-- -d: treat new podcast as downloaded
+- -d: set new podcast as downloaded
 
 ### V 0.4
 
