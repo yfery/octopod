@@ -212,6 +212,15 @@ fn downloaddir(args: &ArgMatches, connection: &Connection) {
     println!("Download dir set to: {}", path);
 }
 
+fn getdownloaddir(connection: &Connection) -> String {
+    let mut stmt = connection.prepare("select value from config where key = 'downloaddir'").unwrap();
+    let mut rows = stmt.query(&[]).unwrap();
+    while let Some(row) = rows.next() {
+        return row.unwrap().get(0);
+    }
+    return "/tmp/".to_string();
+}
+
 fn download(connection: &Connection) {
     use std::io::Write;
     use std::ops::Mul;
@@ -223,15 +232,15 @@ fn download(connection: &Connection) {
         print!("    Downloading: {}%      \r", (b.mul(100_f64)/a).floor());
         true
     }).unwrap();
-    let mut stmt = connection.prepare("select id, subscription_id, url, filename from podcast where downloaded = 0").unwrap();
 
+    let mut stmt = connection.prepare("select id, subscription_id, url, filename from podcast where downloaded = 0").unwrap();
     println!("Download pending podcast:");
     if !stmt.exists(&[]).unwrap() {
         println!("{}", "    Nothing to download");
     }
     for row in stmt.query_map(&[], Podcast::map).unwrap(){
         let podcast = row.unwrap();
-        let temp = "/tmp/".to_string() + podcast.filename.as_str();
+        let temp = getdownloaddir(connection) + podcast.filename.as_str();
         let path = Path::new(&temp);
 
         let mut file = match File::create(&path) {
