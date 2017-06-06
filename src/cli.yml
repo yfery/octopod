@@ -47,3 +47,5 @@ subcommands:
                 required: true
     - download:
         about: download pending files
+    - version:
+        about: version number

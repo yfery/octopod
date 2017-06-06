@@ -19,6 +19,8 @@ use std::path::{Path};
 use std::fs::{File, create_dir};
 use std::env::home_dir;
 
+const VERSION: &'static str = env!("RUSTY_VERSION");
+
 fn main() {
     let lock_socket = common::create_app_lock(12345); // https://rosettacode.org/wiki/Category:Rust
 
@@ -57,6 +59,7 @@ fn main() {
         },
         ("pending", Some(_)) => pending(&connection),
         ("download", Some(_)) => download(&connection),
+        ("version", Some(_)) => version(),
         ("download-dir", Some(sub_matches)) => downloaddir(sub_matches, &connection),
         ("", None) => println!("No subcommand was used"),
         _ => println!("No!"),
@@ -256,4 +259,9 @@ fn download(connection: &Connection) {
         curl.perform().unwrap();
         connection.execute("update podcast set downloaded = 1, downloaded_at = current_timestamp where id = ?1", &[&podcast.id]).unwrap();
     }
+}
+
+fn version() {
+    println!("Rusty {}", VERSION);
+    process::exit(1)
 }
