@@ -5,9 +5,12 @@ extern crate hyper;
 extern crate hyper_native_tls;
 extern crate curl; // https://docs.rs/curl/0.4.6/curl/easy/
 extern crate rusqlite;
+extern crate pbr; // https://a8m.github.io/pb/doc/pbr/index.html
 
 mod schema;
 mod common;
+
+use pbr::{ProgressBar, Units};
 
 use std::process;
 use clap::{App, ArgMatches};
@@ -18,6 +21,8 @@ use curl::easy::Easy;
 use std::path::{Path};
 use std::fs::{File, create_dir};
 use std::env::home_dir;
+use std::time::Duration;
+use std::io::Write;
 
 const VERSION: &'static str = env!("RUSTY_VERSION");
 
@@ -225,16 +230,21 @@ fn getdownloaddir(connection: &Connection) -> String {
 }
 
 fn download(connection: &Connection) {
-    use std::io::Write;
-    use std::ops::Mul;
     let mut curl = Easy::new();
 
+    let mut pb = ProgressBar::new(100);
+    pb.format("╢▌▌░╟");
+    pb.set_units(Units::Bytes);
+    pb.set_max_refresh_rate(Some(Duration::from_millis(100)));
     curl.progress(true).unwrap();
     curl.follow_location(true).unwrap();
-    curl.progress_function( |a, b, _, _| {
-        print!("    Downloading: {}%      \r", (b.mul(100_f64)/a).floor());
+    curl.progress_function( move |a, b, _, _| {
+        pb.total = a as u64;
+        pb.set(b as u64);
         true
     }).unwrap();
+
+    
 
     let mut stmt = connection.prepare("select id, subscription_id, url, filename from podcast where downloaded = 0").unwrap();
     println!("Download pending podcast:");
