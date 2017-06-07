@@ -1,6 +1,6 @@
 #Paths
 NAME=rusty
-VERSION=0.1
+VERSION=0.1a
 BUILD=build
 PKG=$(BUILD)/pkg-debian
 
