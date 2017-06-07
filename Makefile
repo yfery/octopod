@@ -1,6 +1,6 @@
 #Paths
 NAME=rusty
-VERSION=0.1a
+VERSION=0.1b
 BUILD=build
 PKG=$(BUILD)/pkg-debian
 
@@ -33,3 +33,5 @@ package-armv7: build-release-armv7
 	rm -f $(PKG)/DEBIAN/md5sums 
 	find $(PKG)/ -type f ! -regex '.*.hg.*' ! -regex '.*?debian-binary.*' ! -regex '.*?DEBIAN.*' -printf '$(PKG)/%P ' | xargs md5sum | sed 's/build\/pkg-debian\///' > $(PKG)/DEBIAN/md5sums
 	dpkg -b $(PKG)/ $(BUILD)/$(NAME)-$(VERSION)-armv7.deb
+
+packages: package-armv7 package
