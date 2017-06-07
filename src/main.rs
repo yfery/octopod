@@ -34,7 +34,7 @@ fn main() {
     let matches = App::from_yaml(yaml).get_matches();
 
     // Init Sqlite database
-    let mut database_url = String::new();
+    let database_url: String;
 
     if matches.is_present("database") { // get path from command line 
         database_url = matches.value_of("database").unwrap().to_string();

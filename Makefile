@@ -11,6 +11,7 @@ build-release: src/*
 	RUSTY_VERSION=$(VERSION) cargo build --release
 
 package: build-release
+	git tag $(VERSION)
 	cp target/release/rusty $(PKG)/usr/bin/
 	@# Make checksum
 	rm -f $(PKG)/DEBIAN/md5sums 
