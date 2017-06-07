@@ -1,10 +1,10 @@
 #[macro_use] extern crate clap;
 extern crate url;
 extern crate rss;
-extern crate hyper;
-extern crate hyper_native_tls;
+extern crate hyper; // https://github.com/hyperium/hyper
+extern crate hyper_native_tls; // https://github.com/sfackler/hyper-native-tls
 extern crate curl; // https://docs.rs/curl/0.4.6/curl/easy/
-extern crate rusqlite;
+extern crate rusqlite; // https://github.com/jgallagher/rusqlite
 extern crate pbr; // https://a8m.github.io/pb/doc/pbr/index.html
 
 mod schema;
