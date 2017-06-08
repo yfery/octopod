@@ -16,8 +16,8 @@ build-release: src/*
 
 build-release-armv7: src/*
 	cargo clean
-	export OPENSSL_DIR=/tmp/openssl-1.1.0f/; \
-	export OPENSSL_LIB_DIR=/tmp/openssl-1.1.0f/; \
+	export OPENSSL_DIR=/tmp/openssl-1.0.2l/; \
+	export OPENSSL_LIB_DIR=/tmp/openssl-1.0.2l/; \
 	RUSTY_VERSION=$(VERSION) cargo build --release --target armv7-unknown-linux-gnueabihf
 
 package: build-release

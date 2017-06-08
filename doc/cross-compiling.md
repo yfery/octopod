@@ -22,7 +22,9 @@ Target:
 
 We must pass shared option when configuring openssl compilation (this will make -fPIC parameter be passed to the compiler).
 
-    wget https://www.openssl.org/source/openssl-1.1.0f.tar.gz
+Download 1.0.x version as there is no 1.1 version packages in repository right now
+
+    wget https://www.openssl.org/source/openssl-1.0.2l.tar.gz
     tar xzvf openssl-1.1.0f.tar.gz 
     cd openssl-1.1.0f/
     export MACHINE=armv7
