@@ -19,14 +19,12 @@ build: src/*
 	RUSTY_VERSION=$(VERSION) cargo build 
 
 build-release: src/*
-	cargo clean
 	export OPENSSL_INCLUDE_DIR=/usr/include/openssl/; \
 	export OPENSSL_LIB_DIR=/usr/lib/x86_64-linux-gnu/; \
 	export CC=/usr/bin/cc; \
 	RUSTY_VERSION=$(VERSION) cargo build --release 
 
 build-release-armv7: src/*
-	cargo clean
 	export OPENSSL_DIR=/tmp/openssl-1.0.2l/; \
 	export OPENSSL_LIB_DIR=/tmp/openssl-1.0.2l/; \
 	export CC=arm-linux-gnueabihf-gcc; \
