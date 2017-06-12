@@ -32,18 +32,24 @@ Target:
 
 We must pass shared option when configuring openssl compilation (this will make -fPIC parameter be passed to the compiler).
 
-Download 1.0.x version as there is no 1.1 version packages in repository right now
+Download 1.0.1x version as there is no 1.1 version packages in repository right now, and version 1.0.2 are not fully compatible.
 
-    wget https://www.openssl.org/source/openssl-1.0.2l.tar.gz
-    tar xzvf openssl-1.0.2l.tar.gz
-    cd openssl-1.0.2l
+    wget https://www.openssl.org/source/openssl-1.0.1u.tar.gz
+    tar xzvf openssl-1.0.1u.tar.gz
+    cd openssl-1.0.1u
     export MACHINE=armv7
     export ARCH=arm
     export CC=arm-linux-gnueabihf-gcc
     ./config shared
     make
-    export OPENSSL_LIB_DIR=/tmp/openssl-1.0.2l/
-    export OPENSSL_INCLUDE_DIR=/tmp/openssl-1.0.2l/include
+    export OPENSSL_LIB_DIR=/tmp/openssl-1.0.1u/
+    export OPENSSL_INCLUDE_DIR=/tmp/openssl-1.0.1u/include
+
+For ssl support during curl compilation
+
+    export CPPFLAGS="-I/tmp/openssl-1.0.1u/include/"
+	export LDFLAGS="-L/tmp/openssl-1.0.1u/"; \
+	export LIBS="-lssl -lcrypto"; \
 
 We create a cargo configuration file 
 
@@ -57,7 +63,7 @@ And finally we can build
 
     cargo build --target armv7-unknown-linux-gnueabihf
 
-## Debugging
+## Debugging
 
 Print shared libraries dependencies 
 
@@ -67,6 +73,6 @@ Display dynamic part of ELF file
 
     readelf -d <binary>
 
-To know option passed to package compilation
+To know options passed to package compilation
 
     more target/release/build/<package>/output
