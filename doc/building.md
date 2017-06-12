@@ -56,3 +56,17 @@ We create a cargo configuration file
 And finally we can build 
 
     cargo build --target armv7-unknown-linux-gnueabihf
+
+## Debugging
+
+Print shared libraries dependencies 
+
+    ldd <binary> 
+
+Display dynamic part of ELF file
+
+    readelf -d <binary>
+
+To know option passed to package compilation
+
+    more target/release/build/<package>/output
