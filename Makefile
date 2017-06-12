@@ -3,6 +3,7 @@ NAME=rusty
 VERSION=$(shell git describe --tags)
 BUILD=/tmp
 PKG=$(BUILD)/pkg-debian
+OPENSSL=/tmp/openssl-1.0.1u/
 
 define CONTROL_FILE
 Package: rusty
@@ -25,10 +26,10 @@ build-release: src/*
 	RUSTY_VERSION=$(VERSION) cargo build --release 
 
 build-release-armv7: src/*
-	export OPENSSL_DIR=/tmp/openssl-1.0.2l/; \
-	export OPENSSL_LIB_DIR=/tmp/openssl-1.0.2l/; \
-	export CPPFLAGS="-I/tmp/openssl-1.0.2l/include/"; \
-	export LDFLAGS="-L/tmp/openssl-1.0.2l/"; \
+	export OPENSSL_DIR=$(OPENSSL); \
+	export OPENSSL_LIB_DIR=$(OPENSSL); \
+	export CPPFLAGS="-I$(OPENSSL)include/"; \
+	export LDFLAGS="-L$(OPENSSL)"; \
 	export LIBS="-lssl -lcrypto"; \
 	export CC=arm-linux-gnueabihf-gcc; \
 	RUSTY_VERSION=$(VERSION) cargo build --release --target armv7-unknown-linux-gnueabihf
