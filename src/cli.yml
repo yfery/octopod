@@ -44,7 +44,7 @@ subcommands:
         about: set directory where podcast will be downloaded
         args:
             - path:
-                required: true
+                required: false
     - download:
         about: download pending files
     - version:

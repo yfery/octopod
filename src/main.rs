@@ -216,9 +216,13 @@ fn pending(connection: &Connection) {
 }
 
 fn downloaddir(args: &ArgMatches, connection: &Connection) {
-    let path = args.value_of("path").unwrap(); 
-    connection.execute("insert or replace into config (key, value) values ('downloaddir', ?1)", &[&path]).unwrap();
-    println!("Download dir set to: {}", path);
+    let path = args.value_of("path").unwrap_or(""); 
+    if path == "" {
+        println!("Current download dir: {}", getdownloaddir(connection));
+    } else {
+        connection.execute("insert or replace into config (key, value) values ('downloaddir', ?1)", &[&path]).unwrap();
+        println!("Download dir set to: {}", path);
+    }
 }
 
 fn getdownloaddir(connection: &Connection) -> String {
