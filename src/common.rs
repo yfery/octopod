@@ -1,5 +1,6 @@
 use std::net::TcpListener;
 use std::process;
+use rusqlite::Connection;
  
 // https://rosettacode.org/wiki/Category:Rust
 pub fn create_app_lock(port: u16) -> TcpListener {
@@ -17,3 +18,13 @@ pub fn create_app_lock(port: u16) -> TcpListener {
 pub fn remove_app_lock(socket: TcpListener) {
     drop(socket);
 }
+
+pub fn getdownloaddir(connection: &Connection) -> String {
+    let mut stmt = connection.prepare("select value from config where key = 'downloaddir'").unwrap();
+    let mut rows = stmt.query(&[]).unwrap();
+    while let Some(row) = rows.next() {
+        return row.unwrap().get(0);
+    }
+    return "/tmp/".to_string();
+}
+

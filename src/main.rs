@@ -1,6 +1,6 @@
 #[macro_use] extern crate clap;
 extern crate url;
-extern crate rss;
+extern crate rss; // https://github.com/rust-syndication/rss
 extern crate hyper; // https://github.com/hyperium/hyper
 extern crate hyper_native_tls; // https://github.com/sfackler/hyper-native-tls
 extern crate curl; // https://docs.rs/curl/0.4.6/curl/easy/
@@ -224,20 +224,11 @@ fn pending(connection: &Connection) {
 fn downloaddir(args: &ArgMatches, connection: &Connection) {
     let path = args.value_of("path").unwrap_or(""); 
     if path == "" {
-        println!("Current download dir: {}", getdownloaddir(connection));
+        println!("Current download dir: {}", common::getdownloaddir(connection));
     } else {
         connection.execute("insert or replace into config (key, value) values ('downloaddir', ?1)", &[&path]).unwrap();
         println!("Download dir set to: {}", path);
     }
-}
-
-fn getdownloaddir(connection: &Connection) -> String {
-    let mut stmt = connection.prepare("select value from config where key = 'downloaddir'").unwrap();
-    let mut rows = stmt.query(&[]).unwrap();
-    while let Some(row) = rows.next() {
-        return row.unwrap().get(0);
-    }
-    return "/tmp/".to_string();
 }
 
 fn download(connection: &Connection) {
@@ -255,8 +246,6 @@ fn download(connection: &Connection) {
         true
     }).unwrap();
 
-    
-
     let mut stmt = connection.prepare("select id, subscription_id, url, filename from podcast where downloaded = 0").unwrap();
     println!("Download pending podcast:");
     if !stmt.exists(&[]).unwrap() {
@@ -264,7 +253,7 @@ fn download(connection: &Connection) {
     }
     for row in stmt.query_map(&[], Podcast::map).unwrap(){
         let podcast = row.unwrap();
-        let temp = getdownloaddir(connection) + podcast.filename.as_str();
+        let temp = common::getdownloaddir(connection) + podcast.filename.as_str();
         let path = Path::new(&temp);
 
         let mut file = match File::create(&path) {
