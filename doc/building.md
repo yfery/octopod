@@ -45,7 +45,7 @@ Download 1.0.1x version as there is no 1.1 version packages in repository right 
     export OPENSSL_LIB_DIR=/tmp/openssl-1.0.1u/
     export OPENSSL_INCLUDE_DIR=/tmp/openssl-1.0.1u/include
 
-For ssl support during curl compilation
+For ssl support during curl compilation ([source](http://www.matteomattei.com/how-to-cross-compile-curl-library-with-ssl-and-zlib-support/))
 
     export CPPFLAGS="-I/tmp/openssl-1.0.1u/include/"
 	export LDFLAGS="-L/tmp/openssl-1.0.1u/"; \
@@ -64,6 +64,8 @@ And finally we can build
     cargo build --target armv7-unknown-linux-gnueabihf
 
 ## Debugging
+
+[Explanation](https://thekerneldiaries.com/2016/06/16/making-sure-the-correct-libraries-are-loaded-at-run-time/)
 
 Print shared libraries dependencies 
 

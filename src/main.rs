@@ -121,6 +121,7 @@ fn unsubscribe(args: &ArgMatches, connection: &Connection) {
             stdin.read_exact(&mut buffer).unwrap();
             if buffer[0] == 121u8 { // 121 is ascii code for 'y'
                 connection.execute("delete from subscription where id = ?1", &[&id]).unwrap();
+                connection.execute("delete from podcast where subscription_id = ?1", &[&id]).unwrap();
                 println!("Unsubscribed from: {}", subscription.url);
             }
         },
