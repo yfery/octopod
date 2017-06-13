@@ -152,7 +152,7 @@ fn update(args: &ArgMatches, connection: &Connection, feed_id: i64) {
     use rss::Channel;
 
     let mut stmt = connection.prepare("select id, url, label from subscription").unwrap();
-     let ssl = NativeTlsClient::new().unwrap();
+    let ssl = NativeTlsClient::new().unwrap();
     let connector = HttpsConnector::new(ssl);
     let client = Client::with_connector(connector); // create http client with tls support
 
@@ -175,7 +175,13 @@ fn update(args: &ArgMatches, connection: &Connection, feed_id: i64) {
         let mut previous_insert_rowid: i64 = 0;
         res.read_to_string(&mut body).unwrap(); // extract body from query result
 
-        let channel = Channel::from_str(&body).unwrap(); // parse rss into channel
+        let channel = match Channel::from_str(&body) { // parse rss into channel
+            Err(e) => { 
+                println!("Couldn't parse rss {} ({})", subscription.url, e);
+                continue
+            },
+            Ok(channel) => channel
+        };
         connection.execute("update subscription set label = ?1 where id = ?2", &[&channel.title(), &subscription.id]).unwrap(); // update podcast feed name
         for item in channel.items() {
             let url = Url::parse(item.enclosure().unwrap().url()).unwrap();

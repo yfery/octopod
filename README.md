@@ -18,6 +18,10 @@ For setting directory where podcasts will be downloaded (default is temp directo
 
     rusty download-dir ~/podcast/
 
+Without argument, print current download directory
+
+    rusty download-dir
+
 For updating every feeds, listing podcasts to download and download them
 
     rusty update
