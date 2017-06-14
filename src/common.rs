@@ -42,3 +42,22 @@ pub fn get_pending_podcasts(connection: &Connection) -> Option<Vec<Podcast>>  {
     }
     Some(podcasts)
 }
+
+pub fn get_subscriptions(connection: &Connection) -> Option<Vec<Subscription>> {
+    let mut stmt = connection.prepare("select id, url, label, last_build_date from subscription ").unwrap();
+    let rows = stmt.query_map(&[], Subscription::map).unwrap();
+
+    let mut subscriptions = Vec::new();
+    for subscription in rows {
+        subscriptions.push(subscription.unwrap());
+    }
+    Some(subscriptions)
+}
+pub fn get_subscription(connection: &Connection, id: &str) -> Option<Subscription> {
+    let mut stmt = connection.prepare("select id, url, label, last_build_date from subscription where id = ?1").unwrap();
+    let mut subscriptions = stmt.query_map(&[&id], Subscription::map).unwrap();
+    match subscriptions.next() {
+        Some(subscription) => Some(subscription.unwrap()),
+        None => None
+    }
+}

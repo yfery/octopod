@@ -3,6 +3,7 @@ create table if not exists subscription (
     url text not null,
     label text not null, 
     created_at timestamp default current_timestamp,
+    last_build_date text,
     unique(url)
 );
 

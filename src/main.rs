@@ -6,12 +6,12 @@ extern crate hyper_native_tls; // https://github.com/sfackler/hyper-native-tls
 extern crate curl; // https://docs.rs/curl/0.4.6/curl/easy/
 extern crate rusqlite; // https://github.com/jgallagher/rusqlite
 extern crate pbr; // https://a8m.github.io/pb/doc/pbr/index.html
+//extern crate time; // https://doc.rust-lang.org/time/time/index.html
 
 mod schema;
 mod common;
 
 use pbr::{ProgressBar, Units};
-
 use std::process;
 use clap::{App, ArgMatches};
 use schema::*;
@@ -22,7 +22,12 @@ use std::path::{Path};
 use std::fs::{File, create_dir};
 use std::env::home_dir;
 use std::time::Duration;
-use std::io::Write;
+use hyper::Client; // https://hyper.rs/hyper/v0.10.9/hyper/index.html
+use hyper::net::HttpsConnector;
+use hyper_native_tls::NativeTlsClient;
+use std::io::{Write, Read, stdin}; // needed for read_to_string trait
+use std::str::FromStr; // needed for FromStr trait on Channel
+use rss::Channel;
 
 const VERSION: &'static str = env!("RUSTY_VERSION");
 
@@ -87,12 +92,12 @@ fn init(connection: &Connection) {
 fn subscribe(args: &ArgMatches, connection: &Connection) {
     match Url::parse(args.value_of("url").unwrap()) {
         Ok(url) => {
-            let subscription = Subscription { id: 0, url: url.as_str().to_string(), label: String::new()};
+            let subscription = Subscription { id: 0, url: url.as_str().to_string(), label: String::new(), last_build_date: String::new()};
             println!("Subscribing to: {}", subscription.url);
 
             let mut stmt = connection.prepare("select * from subscription where url = ?1").unwrap();
             if !stmt.exists(&[&subscription.url]).unwrap() {
-                connection.execute("insert into subscription (url, label) values (?1, '')", &[&subscription.url]).unwrap();
+                connection.execute("insert into subscription (url, label, last_build_date) values (?1, '', ?2)", &[&subscription.url, &subscription.last_build_date]).unwrap();
             } else {
                 println!("    Feed already subscribed to");
                 return
@@ -105,23 +110,17 @@ fn subscribe(args: &ArgMatches, connection: &Connection) {
 }
 
 fn unsubscribe(args: &ArgMatches, connection: &Connection) {
-    use std::io;
-    use std::io::prelude::*;
-    let mut stdin = io::stdin();
     let id = args.value_of("id").unwrap();
-    let mut buffer = [0;1];
 
-    let mut stmt = connection.prepare("select id, url, label from subscription where id = ?1").unwrap();
-    let mut rows = stmt.query_map(&[&id], Subscription::map).unwrap();
-    match rows.next() {
-        Some(row) => {
-            let subscription = row.unwrap();
+    match common::get_subscription(connection, &id) {
+        Some(subscription) => {
+            let mut stdin = stdin();
+            let mut buffer = [0;1];
             println!("Unsubscribing from: {}", subscription.url);
             println!("Sure? [y/N]"); 
             stdin.read_exact(&mut buffer).unwrap();
             if buffer[0] == 121u8 { // 121 is ascii code for 'y'
-                connection.execute("delete from subscription where id = ?1", &[&id]).unwrap();
-                connection.execute("delete from podcast where subscription_id = ?1", &[&id]).unwrap();
+                subscription.delete(connection);
                 println!("Unsubscribed from: {}", subscription.url);
             }
         },
@@ -130,28 +129,19 @@ fn unsubscribe(args: &ArgMatches, connection: &Connection) {
 }
 
 fn list(connection: &Connection) {
-    let mut stmt = connection.prepare("select id, url, label from subscription").unwrap();
-
     println!("Subscriptions list:");
-    if !stmt.exists(&[]).unwrap() {
-        println!("{}", "    No subscription");
-    }
-
-    for row in stmt.query_map(&[], Subscription::map).unwrap() {
-        let subscription = row.unwrap();
-        println!("    {}: {} ({})", subscription.id, subscription.label, subscription.url);
+    match common::get_subscriptions(connection) {
+        None => println!("{}", "    No subscription"),
+        Some(subscriptions) => {
+            for subscription in subscriptions {
+                println!("    {}: {} ({})", subscription.id, subscription.label, subscription.url);
+            }
+        }
     }
 }
 
 fn update(args: &ArgMatches, connection: &Connection, feed_id: i64) {
-    use hyper::Client; // https://hyper.rs/hyper/v0.10.9/hyper/index.html
-    use hyper::net::HttpsConnector;
-    use hyper_native_tls::NativeTlsClient;
-    use std::io::Read; // needed for read_to_string trait
-    use std::str::FromStr; // needed for FromStr trait on Channel
-    use rss::Channel;
 
-    let mut stmt = connection.prepare("select id, url, label from subscription").unwrap();
     let ssl = NativeTlsClient::new().unwrap();
     let connector = HttpsConnector::new(ssl);
     let client = Client::with_connector(connector); // create http client with tls support
@@ -161,50 +151,56 @@ fn update(args: &ArgMatches, connection: &Connection, feed_id: i64) {
         as_downloaded = 1;
     }
 
-    for row in stmt.query_map(&[], Subscription::map).unwrap() {
-        let subscription = row.unwrap();
+    match common::get_subscriptions(connection) {
+        None => println!("    No subscription to update"),
+        Some(subscriptions) => for subscription in subscriptions {
 
-        if feed_id != subscription.id && feed_id > 0 { // if an id is set, update/populate only this id
-            continue;
-        }
+            if feed_id != subscription.id && feed_id > 0 { // if an id is set, update/populate only this id
+                continue;
+            }
 
-        println!("Updating {}:", subscription.label);
+            println!("Updating {} ...", subscription.label);
 
-        let mut res = client.get(subscription.clone()).send().unwrap(); // get query result thanks to IntoUrl trait implement for Subscription
-        let mut body = String::new();
-        let mut previous_insert_rowid: i64 = 0;
-        res.read_to_string(&mut body).unwrap(); // extract body from query result
+            let mut res = client.get(subscription.clone()).send().unwrap(); // get query result thanks to IntoUrl trait implement for Subscription
+            let mut body = String::new();
+            let mut previous_insert_rowid: i64 = 0;
+            res.read_to_string(&mut body).unwrap(); // extract body from query result
 
-        let channel = match Channel::from_str(&body) { // parse rss into channel
-            Err(e) => { 
-                println!("Couldn't parse rss {} ({})", subscription.url, e);
+            let channel = match Channel::from_str(&body) { // parse rss into channel
+                Err(e) => { 
+                    println!("Couldn't parse rss {} ({})", subscription.url, e);
+                    continue
+                },
+                Ok(channel) => channel
+            };
+
+            if channel.last_build_date().unwrap() == &subscription.last_build_date {
                 continue
-            },
-            Ok(channel) => channel
-        };
-        connection.execute("update subscription set label = ?1 where id = ?2", &[&channel.title(), &subscription.id]).unwrap(); // update podcast feed name
-        for item in channel.items() {
-            let url = Url::parse(item.enclosure().unwrap().url()).unwrap();
-            let path_segments = url.path_segments().unwrap();
+            }
+            connection.execute("update subscription set label = ?1, last_build_date = ?2 where id = ?3", &[&channel.title(), &channel.last_build_date(), &subscription.id]).unwrap(); // update podcast feed name
+            for item in channel.items() {
+                let url = Url::parse(item.enclosure().unwrap().url()).unwrap();
+                let path_segments = url.path_segments().unwrap();
 
-            // create filename
-            let mut filename = String::new();
-            for segment in path_segments {
-                if segment == "enclosure.mp3" || segment == "listen.mp3" {
-                    filename = filename + ".mp3";
-                    break;
+                // create filename
+                let mut filename = String::new();
+                for segment in path_segments {
+                    if segment == "enclosure.mp3" || segment == "listen.mp3" {
+                        filename = filename + ".mp3";
+                        break;
+                    }
+                    filename = segment.to_string();
                 }
-                filename = segment.to_string();
-            }
 
-            let podcast = Podcast { id: 0, subscription_id: subscription.id, url: url.as_str().to_string(), filename: filename};
-            connection.execute("insert or ignore into podcast (subscription_id, url, filename, downloaded) values (?1, ?2, ?3, ?4)", &[&podcast.subscription_id, &podcast.url, &podcast.filename, &as_downloaded]).unwrap();
-            if previous_insert_rowid != connection.last_insert_rowid() {
-                println!("    New podcast added: {:?}", podcast.filename);
+                let podcast = Podcast { id: 0, subscription_id: subscription.id, url: url.as_str().to_string(), filename: filename};
+                connection.execute("insert or ignore into podcast (subscription_id, url, filename, downloaded) values (?1, ?2, ?3, ?4)", &[&podcast.subscription_id, &podcast.url, &podcast.filename, &as_downloaded]).unwrap();
+                if previous_insert_rowid != connection.last_insert_rowid() {
+                    println!("    New podcast added: {:?}", podcast.filename);
+                }
+                previous_insert_rowid = connection.last_insert_rowid();
             }
-            previous_insert_rowid = connection.last_insert_rowid();
+            println!("{} updated", subscription.label);
         }
-        println!("Updated");
     }
 }
 
@@ -221,12 +217,12 @@ fn pending(connection: &Connection) {
 }
 
 fn downloaddir(args: &ArgMatches, connection: &Connection) {
-    let path = args.value_of("path").unwrap_or(""); 
-    if path == "" {
-        println!("Current download dir: {}", common::getdownloaddir(connection));
-    } else {
-        connection.execute("insert or replace into config (key, value) values ('downloaddir', ?1)", &[&path]).unwrap();
-        println!("Download dir set to: {}", path);
+    match args.value_of("path") {
+        None => println!("Current download dir: {}", common::getdownloaddir(connection)),
+        Some(path) => {
+            connection.execute("insert or replace into config (key, value) values ('downloaddir', ?1)", &[&path]).unwrap();
+            println!("Download dir set to: {}", path);
+        }
     }
 }
 
@@ -272,5 +268,4 @@ fn download(connection: &Connection) {
 
 fn version() {
     println!("Rusty {}", VERSION);
-    process::exit(1)
 }
