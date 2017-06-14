@@ -209,15 +209,14 @@ fn update(args: &ArgMatches, connection: &Connection, feed_id: i64) {
 }
 
 fn pending(connection: &Connection) {
-    let mut stmt = connection.prepare("select id, subscription_id, url, filename from podcast where downloaded = 0").unwrap();
-
     println!("Pending list:");
-    if !stmt.exists(&[]).unwrap() {
-        println!("{}", "    Nothing to download");
-    }
-    for row in stmt.query_map(&[], Podcast::map).unwrap(){
-        let podcast = row.unwrap();
-        println!("    {} ({})", podcast.filename, podcast.url);
+    match common::get_pending_podcasts(connection) {
+        None => println!("{}", "    Nothing to download"),
+        Some(podcasts) => {
+            for podcast in podcasts {
+                println!("    {} ({})", podcast.filename, podcast.url);
+            }
+        }
     }
 }
 
@@ -246,28 +245,28 @@ fn download(connection: &Connection) {
         true
     }).unwrap();
 
-    let mut stmt = connection.prepare("select id, subscription_id, url, filename from podcast where downloaded = 0").unwrap();
     println!("Download pending podcast:");
-    if !stmt.exists(&[]).unwrap() {
-        println!("{}", "    Nothing to download");
-    }
-    for row in stmt.query_map(&[], Podcast::map).unwrap(){
-        let podcast = row.unwrap();
-        let temp = common::getdownloaddir(connection) + podcast.filename.as_str();
-        let path = Path::new(&temp);
+    match common::get_pending_podcasts(connection) {
+        None => println!("{}", "    Nothing to download"),
+        Some(podcasts) => {
+            for podcast in podcasts {
+                let temp = common::getdownloaddir(connection) + podcast.filename.as_str();
+                let path = Path::new(&temp);
 
-        let mut file = match File::create(&path) {
-            Err(why) => panic!("couldn't create {}",
-                               why),
-            Ok(file) => file,
-        };
-        curl.url(&podcast.url).unwrap();
-        curl.write_function( move |data| {
-            Ok(file.write(data).unwrap())
-        }).unwrap();
-        println!("    {}", podcast.filename);
-        curl.perform().unwrap();
-        connection.execute("update podcast set downloaded = 1, downloaded_at = current_timestamp where id = ?1", &[&podcast.id]).unwrap();
+                let mut file = match File::create(&path) {
+                    Err(why) => panic!("couldn't create {}",
+                                       why),
+                    Ok(file) => file,
+                };
+                curl.url(&podcast.url).unwrap();
+                curl.write_function( move |data| {
+                    Ok(file.write(data).unwrap())
+                }).unwrap();
+                println!("    {}", podcast.filename);
+                curl.perform().unwrap();
+                connection.execute("update podcast set downloaded = 1, downloaded_at = current_timestamp where id = ?1", &[&podcast.id]).unwrap();
+            }
+        }
     }
 }
 

@@ -1,7 +1,8 @@
 use std::net::TcpListener;
 use std::process;
 use rusqlite::Connection;
- 
+use schema::*;
+
 // https://rosettacode.org/wiki/Category:Rust
 pub fn create_app_lock(port: u16) -> TcpListener {
     match TcpListener::bind(("0.0.0.0", port)) {
@@ -28,3 +29,16 @@ pub fn getdownloaddir(connection: &Connection) -> String {
     return "/tmp/".to_string();
 }
 
+pub fn get_pending_podcasts(connection: &Connection) -> Option<Vec<Podcast>>  {
+    let mut stmt = connection.prepare("select id, subscription_id, url, filename from podcast where downloaded = 0").unwrap();
+    if !stmt.exists(&[]).unwrap() {
+        return None;
+    }
+    let rows = stmt.query_map(&[], Podcast::map).unwrap();
+
+    let mut podcasts = Vec::new();
+    for podcast in rows {
+        podcasts.push(podcast.unwrap());
+    }
+    Some(podcasts)
+}
