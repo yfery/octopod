@@ -6,7 +6,7 @@ extern crate hyper_native_tls; // https://github.com/sfackler/hyper-native-tls
 extern crate curl; // https://docs.rs/curl/0.4.6/curl/easy/
 extern crate rusqlite; // https://github.com/jgallagher/rusqlite
 extern crate pbr; // https://a8m.github.io/pb/doc/pbr/index.html
-//extern crate time; // https://doc.rust-lang.org/time/time/index.html
+extern crate time; // https://doc.rust-lang.org/time/time/index.html
 
 mod schema;
 mod common;
@@ -23,8 +23,12 @@ use std::fs::{File, create_dir};
 use std::env::home_dir;
 use std::time::Duration;
 use hyper::Client; // https://hyper.rs/hyper/v0.10.9/hyper/index.html
+use hyper::header::ContentType;
 use hyper::net::HttpsConnector;
 use hyper_native_tls::NativeTlsClient;
+use hyper::mime::Mime;
+use hyper::mime::TopLevel::{Text, Application};
+use hyper::mime::SubLevel::Xml;
 use std::io::{Write, Read, stdin}; // needed for read_to_string trait
 use std::str::FromStr; // needed for FromStr trait on Channel
 use rss::Channel;
@@ -159,11 +163,20 @@ fn update(args: &ArgMatches, connection: &Connection, feed_id: i64) {
                 continue;
             }
 
-            println!("Updating {} ...", subscription.label);
+            print!("Updating {} ... ", subscription.label);
 
             let mut res = client.get(subscription.clone()).send().unwrap(); // get query result thanks to IntoUrl trait implement for Subscription
             let mut body = String::new();
             let mut previous_insert_rowid: i64 = 0;
+            match res.headers.get() {
+                Some(&ContentType(Mime(Text, Xml, _))) => (),
+                Some(&ContentType(Mime(Application, Xml, _))) => (),
+                Some(content_type) => {
+                    println!("Content type unsupported: {}", content_type.to_string());
+                    continue;
+                },
+                None => ()
+            }
             res.read_to_string(&mut body).unwrap(); // extract body from query result
 
             let channel = match Channel::from_str(&body) { // parse rss into channel
@@ -175,6 +188,7 @@ fn update(args: &ArgMatches, connection: &Connection, feed_id: i64) {
             };
 
             if channel.last_build_date().unwrap() == &subscription.last_build_date {
+                println!("Already up to date");
                 continue
             }
             connection.execute("update subscription set label = ?1, last_build_date = ?2 where id = ?3", &[&channel.title(), &channel.last_build_date(), &subscription.id]).unwrap(); // update podcast feed name
@@ -199,7 +213,7 @@ fn update(args: &ArgMatches, connection: &Connection, feed_id: i64) {
                 }
                 previous_insert_rowid = connection.last_insert_rowid();
             }
-            println!("{} updated", subscription.label);
+            println!("updated");
         }
     }
 }
