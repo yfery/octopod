@@ -12,6 +12,8 @@ create table if not exists podcast (
     subscription_id integer not null,
     url text not null,
     filename text not null,
+    title text not null,
+    content_text text not null,
     downloaded integer default 0,
     downloaded_at timestamp,
     created_at timestamp default current_timestamp,

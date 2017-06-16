@@ -7,6 +7,9 @@ extern crate curl; // https://docs.rs/curl/0.4.6/curl/easy/
 extern crate rusqlite; // https://github.com/jgallagher/rusqlite
 extern crate pbr; // https://a8m.github.io/pb/doc/pbr/index.html
 extern crate time; // https://doc.rust-lang.org/time/time/index.html
+extern crate serde;
+#[macro_use] extern crate serde_json; // https://github.com/serde-rs/json
+#[macro_use] extern crate serde_derive; 
 
 mod schema;
 mod common;
@@ -74,6 +77,7 @@ fn main() {
         ("pending", Some(_)) => pending(&connection),
         ("download", Some(_)) => download(&connection),
         ("version", Some(_)) => version(),
+        ("jsonfeed", Some(_)) => jsonfeed(&connection),
         ("download-dir", Some(sub_matches)) => downloaddir(sub_matches, &connection),
         ("", None) => println!("No subcommand was used"),
         _ => println!("No!"),
@@ -206,8 +210,8 @@ fn update(args: &ArgMatches, connection: &Connection, feed_id: i64) {
                     filename = segment.to_string();
                 }
 
-                let podcast = Podcast { id: 0, subscription_id: subscription.id, url: url.as_str().to_string(), filename: filename};
-                connection.execute("insert or ignore into podcast (subscription_id, url, filename, downloaded) values (?1, ?2, ?3, ?4)", &[&podcast.subscription_id, &podcast.url, &podcast.filename, &as_downloaded]).unwrap();
+                let podcast = Podcast { id: 0, subscription_id: subscription.id, url: url.as_str().to_string(), filename: filename, title: item.title().unwrap().to_string(), content_text: String::new()};
+                connection.execute("insert or ignore into podcast (subscription_id, url, filename, downloaded, title, content_text) values (?1, ?2, ?3, ?4, ?5, ?6)", &[&podcast.subscription_id, &podcast.url, &podcast.filename, &as_downloaded, &podcast.title, &podcast.content_text]).unwrap();
                 if previous_insert_rowid != connection.last_insert_rowid() {
                     println!("    New podcast added: {:?}", podcast.filename);
                 }
@@ -282,4 +286,23 @@ fn download(connection: &Connection) {
 
 fn version() {
     println!("Rusty {}", VERSION);
+}
+
+fn jsonfeed(connection: &Connection) {
+
+    match common::get_pending_podcasts(connection) {
+        None => println!("{}", "    Nothing to download"),
+        Some(podcasts) => {
+            let data = json!({
+                "version": "https://jsonfeed.org/version/1",
+                "title": "Rusty feed",
+                "home_page_url": "https://feed.fery.me/",
+                "feed_url": "https://feed.fery.me/rusty.json",
+                "items": 
+                    podcasts
+            });
+            let j = serde_json::to_string_pretty(&data).unwrap();
+            println!("{}", j);
+        }
+    }
 }

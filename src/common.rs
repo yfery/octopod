@@ -30,7 +30,7 @@ pub fn getdownloaddir(connection: &Connection) -> String {
 }
 
 pub fn get_pending_podcasts(connection: &Connection) -> Option<Vec<Podcast>>  {
-    let mut stmt = connection.prepare("select id, subscription_id, url, filename from podcast where downloaded = 0").unwrap();
+    let mut stmt = connection.prepare("select id, subscription_id, url, filename, title, content_text from podcast where downloaded = 0").unwrap();
     if !stmt.exists(&[]).unwrap() {
         return None;
     }

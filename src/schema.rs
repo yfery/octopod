@@ -37,12 +37,14 @@ impl IntoUrl for Subscription {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Podcast {
     pub id: i64,
     pub subscription_id: i64,
     pub url:  String,
     pub filename: String,
+    pub title: String,
+    pub content_text: String,
 }
 
 impl Podcast {
@@ -51,7 +53,9 @@ impl Podcast {
             id: row.get(0),
             subscription_id: row.get(1),
             url: row.get(2),
-            filename: row.get(3)
+            filename: row.get(3),
+            title: row.get(4),
+            content_text: row.get(5)
         }
     }
 }
