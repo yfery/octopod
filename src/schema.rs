@@ -4,7 +4,6 @@ use std::str; // needed for from_utf8
 use std::str::FromStr; // needed for FromStr trait on Channel
 use rss::{Channel, Error};
 use url::Url;
-use hyper;
 
 // derive allow use of unwrap() on Subscription
 #[derive(Debug, Clone)]
@@ -30,7 +29,7 @@ impl Subscription {
         connection.execute("delete from podcast where subscription_id = ?1", &[&self.id]).unwrap();
     }
 
-    pub fn from_xml_feed(&self, connection: &Connection, body: hyper::Chunk, as_downloaded: bool) -> Result<&str, Error> {
+    pub fn from_xml_feed(&self, connection: &Connection, body: Vec<u8>, as_downloaded: bool) -> Result<&str, Error> {
         let mut previous_insert_rowid: i64 = 0;
 
         let channel = match Channel::from_str(str::from_utf8(&body).unwrap()) { // parse rss into channel

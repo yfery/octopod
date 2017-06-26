@@ -2,10 +2,9 @@
 extern crate url;
 extern crate rss; // https://github.com/rust-syndication/rss
 extern crate hyper; // https://github.com/hyperium/hyper
-extern crate hyper_tls; //https://docs.rs/hyper-tls/0.1.0/
 extern crate tokio_core; 
+extern crate reqwest;
 extern crate futures;
-// extern crate hyper_native_tls; // https://github.com/sfackler/hyper-native-tls
 extern crate mime;
 extern crate curl; // https://docs.rs/curl/0.4.6/curl/easy/
 extern crate rusqlite; // https://github.com/jgallagher/rusqlite
@@ -29,12 +28,9 @@ use std::path::{Path};
 use std::fs::{File, create_dir};
 use std::env::home_dir;
 use std::time::Duration;
-// use hyper::Client; // https://hyper.rs/hyper/v0.10.9/hyper/index.html
 use hyper::header::ContentType;
-use futures::{Future, Stream};
 use std::io::{Write, Read, stdin}; // needed for read_to_string trait
 use std::str;
-// use std::str::FromStr; // needed for FromStr trait on Channel
 
 const VERSION: &'static str = env!("RUSTY_VERSION");
 
@@ -150,11 +146,6 @@ fn list(connection: &Connection) {
 
 fn update(args: &ArgMatches, connection: &Connection, feed_id: i64) {
 
-    let mut core = ::tokio_core::reactor::Core::new().unwrap();
-    let client = ::hyper::Client::configure()
-        .connector(::hyper_tls::HttpsConnector::new(4, &core.handle()).unwrap())
-        .build(&core.handle());
-
     match common::get_subscriptions(connection) {
         None => println!("    No subscription to update"),
         Some(subscriptions) => for subscription in subscriptions {
@@ -165,29 +156,24 @@ fn update(args: &ArgMatches, connection: &Connection, feed_id: i64) {
 
             print!("Updating {} ... ", subscription.label);
 
-            let work = client.get(subscription.url.parse().unwrap()).and_then(|res| {
-                // match is not possible here https://github.com/hyperium/hyper/issues/1222
-                // TODO: issue with charset, is not mandatory: https://www.w3.org/International/articles/http-charset/index
-                // let text_xml: mime::Mime = "text/xml; CHARSET=UTF-8".parse().unwrap();
-                // let application_xml: mime::Mime = "application/xml".parse().unwrap();
-                // let application_rssxml: mime::Mime = "application/rss+xml".parse().unwrap();
-                // if res.headers().get() == Some(&ContentType(text_xml)) || 
-                //     res.headers().get() == Some(&ContentType(application_xml)) || 
-                //     res.headers().get() == Some(&ContentType(application_rssxml)) {
-                //     println!("{:?}", ());
-                // }
+            let mut body: Vec<u8> = Vec::new();
+            let mut res = reqwest::get(&subscription.url).unwrap();
+            res.read_to_end(&mut body).unwrap();
 
-                // will move back to concat() with hyper 0.2 version
-                println!("{}", res.status());
-                println!("{:?}", res);
-                res.body().concat2()
-            });
-            let body = core.run(work).unwrap();
-
-            match subscription.from_xml_feed(connection, body, args.is_present("as-downloaded")) {
-                Ok(message) => println!("{}", message),
-                Err(e) => println!("{}", e),
-            };
+            match res.headers().get() {
+                Some(&ContentType(ref mime)) => {
+                    match mime.subtype() {
+                        mime::XML => {
+                            match subscription.from_xml_feed(connection, body, args.is_present("as-downloaded")) {
+                                Ok(message) => println!("{}", message),
+                                Err(e) => println!("{}", e),
+                            };
+                        },
+                        _ => println!("Unsupported mime type: {}", mime.subtype())
+                    };
+                },
+            None => ()
+            }
         }
     }
 }

@@ -9,7 +9,6 @@ url = "1.4.0"
 curl = "0.4.6"
 rss = "0.6"
 hyper = "0.11"
-hyper-tls = "0.1.0"
 tokio-core = "0.1.8"
 futures = "0.1.14"
 mime = "0.3.2"
@@ -25,3 +24,8 @@ serde_derive = "1.0"
 [dependencies.rusqlite]
 version = "0.11.0"
 features = ["bundled"]
+
+[dependencies.reqwest]
+git = "https://github.com/seanmonstar/reqwest"
+rev = "478309e03f9f902d592d9b5ec6cab2a476c6b069"
+features = ["unstable"]
