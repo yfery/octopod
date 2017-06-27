@@ -14,8 +14,6 @@ subcommands:
         args:
             - url:
                 required: true
-            - label: 
-                required: false
             - as-downloaded:
                 short: d
                 help: Sets new podcast as downloaded
