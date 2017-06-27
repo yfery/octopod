@@ -1,1 +1,6 @@
-RUST_BACKTRACE=1 target/debug/rusty --database /tmp/coin7.sqlite3 jsonfeed
+#RUST_BACKTRACE=1 target/debug/rusty --database /tmp/coin7.sqlite3 jsonfeed
+#RUST_BACKTRACE=1 target/debug/rusty --database /tmp/coin6.sqlite3 update
+
+rm -f /tmp/coin8.sqlite3
+RUST_BACKTRACE=1 target/debug/rusty --database /tmp/coin8.sqlite3 subscribe http://www.geekzone.fr/feed/podcast/dans-le-canap
+RUST_BACKTRACE=1 target/debug/rusty --database /tmp/coin8.sqlite3 update

@@ -8,8 +8,10 @@ clap = { version = "2.19", features = ["yaml"]}
 url = "1.4.0"
 curl = "0.4.6"
 rss = "0.6"
-hyper = "0.10.10"
-hyper-native-tls = "0.2.3"
+hyper = "0.11"
+tokio-core = "0.1.8"
+futures = "0.1.14"
+mime = "0.3.2"
 slog = "2.0.5"
 slog-term = "2.0.1"
 slog-async = "2.0.1"
@@ -22,3 +24,8 @@ serde_derive = "1.0"
 [dependencies.rusqlite]
 version = "0.11.0"
 features = ["bundled"]
+
+[dependencies.reqwest]
+git = "https://github.com/seanmonstar/reqwest"
+rev = "478309e03f9f902d592d9b5ec6cab2a476c6b069"
+features = ["unstable"]

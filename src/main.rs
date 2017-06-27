@@ -2,7 +2,10 @@
 extern crate url;
 extern crate rss; // https://github.com/rust-syndication/rss
 extern crate hyper; // https://github.com/hyperium/hyper
-extern crate hyper_native_tls; // https://github.com/sfackler/hyper-native-tls
+extern crate tokio_core; 
+extern crate reqwest;
+extern crate futures;
+extern crate mime;
 extern crate curl; // https://docs.rs/curl/0.4.6/curl/easy/
 extern crate rusqlite; // https://github.com/jgallagher/rusqlite
 extern crate pbr; // https://a8m.github.io/pb/doc/pbr/index.html
@@ -25,16 +28,9 @@ use std::path::{Path};
 use std::fs::{File, create_dir};
 use std::env::home_dir;
 use std::time::Duration;
-use hyper::Client; // https://hyper.rs/hyper/v0.10.9/hyper/index.html
 use hyper::header::ContentType;
-use hyper::net::HttpsConnector;
-use hyper_native_tls::NativeTlsClient;
-use hyper::mime::Mime;
-use hyper::mime::TopLevel::{Text, Application};
-use hyper::mime::SubLevel::Xml;
 use std::io::{Write, Read, stdin}; // needed for read_to_string trait
-use std::str::FromStr; // needed for FromStr trait on Channel
-use rss::Channel;
+use std::str;
 
 const VERSION: &'static str = env!("RUSTY_VERSION");
 
@@ -105,7 +101,7 @@ fn subscribe(args: &ArgMatches, connection: &Connection) {
 
             let mut stmt = connection.prepare("select * from subscription where url = ?1").unwrap();
             if !stmt.exists(&[&subscription.url]).unwrap() {
-                connection.execute("insert into subscription (url, label, last_build_date) values (?1, '', ?2)", &[&subscription.url, &subscription.last_build_date]).unwrap();
+                connection.execute("insert into subscription (url, label, last_build_date) values (?1, '', '')", &[&subscription.url]).unwrap();
             } else {
                 println!("    Feed already subscribed to");
                 return
@@ -150,15 +146,6 @@ fn list(connection: &Connection) {
 
 fn update(args: &ArgMatches, connection: &Connection, feed_id: i64) {
 
-    let ssl = NativeTlsClient::new().unwrap();
-    let connector = HttpsConnector::new(ssl);
-    let client = Client::with_connector(connector); // create http client with tls support
-
-    let mut as_downloaded = 0;
-    if args.is_present("as-downloaded") {
-        as_downloaded = 1;
-    }
-
     match common::get_subscriptions(connection) {
         None => println!("    No subscription to update"),
         Some(subscriptions) => for subscription in subscriptions {
@@ -169,55 +156,24 @@ fn update(args: &ArgMatches, connection: &Connection, feed_id: i64) {
 
             print!("Updating {} ... ", subscription.label);
 
-            let mut res = client.get(subscription.clone()).send().unwrap(); // get query result thanks to IntoUrl trait implement for Subscription
-            let mut body = String::new();
-            let mut previous_insert_rowid: i64 = 0;
-            match res.headers.get() {
-                Some(&ContentType(Mime(Text, Xml, _))) => (),
-                Some(&ContentType(Mime(Application, Xml, _))) => (),
-                Some(content_type) => {
-                    println!("Content type unsupported: {}", content_type.to_string());
-                    continue;
+            let mut body: Vec<u8> = Vec::new();
+            let mut res = reqwest::get(&subscription.url).unwrap();
+            res.read_to_end(&mut body).unwrap();
+
+            match res.headers().get() {
+                Some(&ContentType(ref mime)) => {
+                    match mime.subtype() {
+                        mime::XML => {
+                            match subscription.from_xml_feed(connection, body, args.is_present("as-downloaded")) {
+                                Ok(message) => println!("{}", message),
+                                Err(e) => println!("{}", e),
+                            };
+                        },
+                        _ => println!("Unsupported mime type: {}", mime.subtype())
+                    };
                 },
-                None => ()
+            None => ()
             }
-            res.read_to_string(&mut body).unwrap(); // extract body from query result
-
-            let channel = match Channel::from_str(&body) { // parse rss into channel
-                Err(e) => { 
-                    println!("Couldn't parse rss {} ({})", subscription.url, e);
-                    continue
-                },
-                Ok(channel) => channel
-            };
-
-            if channel.last_build_date().unwrap() == &subscription.last_build_date {
-                println!("Already up to date");
-                continue
-            }
-            connection.execute("update subscription set label = ?1, last_build_date = ?2 where id = ?3", &[&channel.title(), &channel.last_build_date(), &subscription.id]).unwrap(); // update podcast feed name
-            for item in channel.items() {
-                let url = Url::parse(item.enclosure().unwrap().url()).unwrap();
-                let path_segments = url.path_segments().unwrap();
-
-                // create filename
-                let mut filename = String::new();
-                for segment in path_segments {
-                    if segment == "enclosure.mp3" || segment == "listen.mp3" {
-                        filename = filename + ".mp3";
-                        break;
-                    }
-                    filename = segment.to_string();
-                }
-
-                let podcast = Podcast { id: 0, subscription_id: subscription.id, url: url.as_str().to_string(), filename: filename, title: item.title().unwrap().to_string(), content_text: String::new()};
-                connection.execute("insert or ignore into podcast (subscription_id, url, filename, downloaded, title, content_text) values (?1, ?2, ?3, ?4, ?5, ?6)", &[&podcast.subscription_id, &podcast.url, &podcast.filename, &as_downloaded, &podcast.title, &podcast.content_text]).unwrap();
-                if previous_insert_rowid != connection.last_insert_rowid() {
-                    println!("    New podcast added: {:?}", podcast.filename);
-                }
-                previous_insert_rowid = connection.last_insert_rowid();
-            }
-            println!("updated");
         }
     }
 }
