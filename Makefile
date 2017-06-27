@@ -39,6 +39,8 @@ package-control:
 	mkdir -p $(PKG)/DEBIAN
 	mkdir -p $(PKG)/usr/bin/
 	echo "$$CONTROL_FILE" > $(PKG)/DEBIAN/control
+	mkdir -p $(PKG)/etc/bash_completion.d/
+	cp assets/completion.bash $(PKG)/etc/bash_completion.d/rusty
 
 package: package-control build-release
 	cp target/release/rusty $(PKG)/usr/bin/
