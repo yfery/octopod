@@ -31,6 +31,7 @@ use std::time::Duration;
 use hyper::header::ContentType;
 use std::io::{Write, Read, stdin}; // needed for read_to_string trait
 use std::str;
+use std::str::FromStr;
 
 const VERSION: &'static str = env!("RUSTY_VERSION");
 
@@ -160,19 +161,20 @@ fn update(args: &ArgMatches, connection: &Connection, feed_id: i64) {
             let mut res = reqwest::get(&subscription.url).unwrap();
             res.read_to_end(&mut body).unwrap();
 
+            let rss = mime::Mime::from_str("application/rss+xml").unwrap();
             match res.headers().get() {
                 Some(&ContentType(ref mime)) => {
-                    match mime.subtype() {
-                        mime::XML => {
-                            match subscription.from_xml_feed(connection, body, args.is_present("as-downloaded")) {
-                                Ok(message) => println!("{}", message),
-                                Err(e) => println!("{}", e),
-                            };
-                        },
-                        _ => println!("Unsupported mime type: {}", mime.subtype())
-                    };
+                    // impossible to find how to use match instead of if here, because of the custom mime type
+                    if mime.subtype() == mime::XML || mime.subtype() == rss.subtype() {
+                        match subscription.from_xml_feed(connection, body, args.is_present("as-downloaded")) {
+                            Ok(message) => println!("{}", message),
+                            Err(e) => println!("{}", e),
+                        };
+                    } else {
+                        println!("Unsupported mime type: {}", mime.subtype());
+                    }
                 },
-            None => ()
+                None => ()
             }
         }
     }
