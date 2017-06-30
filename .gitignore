@@ -12,5 +12,6 @@
 /target/
 
 tags
+rusty-tags.vi
 **/*.rs.bk
 Cargo.lock
