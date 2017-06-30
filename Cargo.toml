@@ -6,7 +6,7 @@ authors = ["Yann <yann@fery.me>"]
 [dependencies]
 clap = { version = "2.19", features = ["yaml"]}
 url = "1.4.0"
-curl = "0.4.6"
+curl = "0.4.7"
 rss = "0.6"
 hyper = "0.11"
 tokio-core = "0.1.8"
