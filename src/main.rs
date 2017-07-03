@@ -11,8 +11,6 @@ extern crate rusqlite; // https://github.com/jgallagher/rusqlite
 extern crate pbr; // https://a8m.github.io/pb/doc/pbr/index.html
 extern crate time; // https://doc.rust-lang.org/time/time/index.html
 extern crate serde;
-#[macro_use] extern crate serde_json; // https://github.com/serde-rs/json
-#[macro_use] extern crate serde_derive; 
 
 mod schema;
 mod common;
@@ -75,7 +73,6 @@ fn main() {
         ("downloaded", Some(_)) => downloaded(&connection),
         ("download", Some(_)) => download(&connection),
         ("version", Some(_)) => version(),
-        ("jsonfeed", Some(_)) => jsonfeed(&connection),
         ("download-dir", Some(sub_matches)) => downloaddir(sub_matches, &connection),
         ("", None) => println!("No subcommand was used"),
         _ => println!("No!"),
@@ -187,7 +184,7 @@ fn pending(connection: &Connection) {
         None => println!("{}", "    Nothing to download"),
         Some(podcasts) => {
             for podcast in podcasts {
-                println!("    {} ({})", podcast.filename, podcast.url);
+                println!("    {}: {} ({})", podcast.id, podcast.filename, podcast.url);
             }
         }
     }
@@ -199,7 +196,7 @@ fn downloaded(connection: &Connection) {
         None => println!("{}", "    Nothing has been downloaded"),
         Some(podcasts) => {
             for podcast in podcasts {
-                println!("    {} ({})", podcast.filename, podcast.url);
+                println!("    {}: {} ({})", podcast.id, podcast.filename, podcast.url);
             }
         }
     }
@@ -257,23 +254,4 @@ fn download(connection: &Connection) {
 
 fn version() {
     println!("Rusty {}", VERSION);
-}
-
-fn jsonfeed(connection: &Connection) {
-
-    match common::get_pending_podcasts(connection) {
-        None => println!("{}", "    Nothing to download"),
-        Some(podcasts) => {
-            let data = json!({
-                "version": "https://jsonfeed.org/version/1",
-                "title": "Rusty feed",
-                "home_page_url": "https://feed.fery.me/",
-                "feed_url": "https://feed.fery.me/rusty.json",
-                "items": 
-                    podcasts
-            });
-            let j = serde_json::to_string_pretty(&data).unwrap();
-            println!("{}", j);
-        }
-    }
 }

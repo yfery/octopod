@@ -74,7 +74,7 @@ impl Subscription {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug)]
 pub struct Podcast {
     pub id: i64,
     pub subscription_id: i64,

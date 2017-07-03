@@ -45,5 +45,3 @@ subcommands:
         about: download pending files
     - version:
         about: version number
-    - jsonfeed:
-        about: print pending podcast into json feed format

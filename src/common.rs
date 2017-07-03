@@ -48,7 +48,7 @@ pub fn get_pending_podcasts(connection: &Connection) -> Option<Vec<Podcast>>  {
 }
 
 pub fn get_downloaded_podcasts(connection: &Connection) -> Option<Vec<Podcast>>  {
-    get_podcasts(connection, "select id, subscription_id, url, filename, title, content_text from podcast where downloaded = 0")
+    get_podcasts(connection, "select id, subscription_id, url, filename, title, content_text from podcast where downloaded = 1")
 }
 
 pub fn get_subscriptions(connection: &Connection) -> Option<Vec<Subscription>> {
