@@ -7,4 +7,4 @@
 # RUST_BACKTRACE=1 target/debug/rusty --database /tmp/coin8.sqlite3 update
 
 
- RUST_BACKTRACE=1 target/debug/rusty --database /tmp/coin8.sqlite3 downloaded
+ RUST_BACKTRACE=1 target/debug/rusty --database /tmp/coin8.sqlite3 download 

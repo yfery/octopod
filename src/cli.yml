@@ -43,5 +43,8 @@ subcommands:
                 required: false
     - download:
         about: download pending files
+        args:
+            - id:
+                required: false
     - version:
         about: version number

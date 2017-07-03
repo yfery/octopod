@@ -15,19 +15,16 @@ extern crate serde;
 mod schema;
 mod common;
 
-use pbr::{ProgressBar, Units};
 use std::process;
 use clap::{App, ArgMatches};
 use schema::*;
 use url::Url;
 use rusqlite::Connection;
-use curl::easy::Easy;
+use std::fs::create_dir;
 use std::path::{Path};
-use std::fs::{File, create_dir};
 use std::env::home_dir;
-use std::time::Duration;
 use hyper::header::ContentType;
-use std::io::{Write, Read, stdin}; // needed for read_to_string trait
+use std::io::{Read, stdin}; // needed for read_to_string trait
 use std::str;
 use std::str::FromStr;
 
@@ -71,7 +68,7 @@ fn main() {
         },
         ("pending", Some(_)) => pending(&connection),
         ("downloaded", Some(_)) => downloaded(&connection),
-        ("download", Some(_)) => download(&connection),
+        ("download", Some(sub_matches)) => download(sub_matches, &connection),
         ("version", Some(_)) => version(),
         ("download-dir", Some(sub_matches)) => downloaddir(sub_matches, &connection),
         ("", None) => println!("No subcommand was used"),
@@ -212,42 +209,24 @@ fn downloaddir(args: &ArgMatches, connection: &Connection) {
     }
 }
 
-fn download(connection: &Connection) {
-    let mut curl = Easy::new();
-
-    let mut pb = ProgressBar::new(100);
-    pb.format("╢▌▌░╟");
-    pb.set_units(Units::Bytes);
-    pb.set_max_refresh_rate(Some(Duration::from_millis(100)));
-    curl.progress(true).unwrap();
-    curl.follow_location(true).unwrap();
-    curl.progress_function( move |a, b, _, _| {
-        pb.total = a as u64;
-        pb.set(b as u64);
-        true
-    }).unwrap();
-
-    println!("Download pending podcast:");
-    match common::get_pending_podcasts(connection) {
-        None => println!("{}", "    Nothing to download"),
-        Some(podcasts) => {
-            for podcast in podcasts {
-                let temp = common::getdownloaddir(connection) + podcast.filename.as_str();
-                let path = Path::new(&temp);
-
-                let mut file = match File::create(&path) {
-                    Err(why) => panic!("couldn't create {}",
-                                       why),
-                    Ok(file) => file,
-                };
-                curl.url(&podcast.url).unwrap();
-                curl.write_function( move |data| {
-                    Ok(file.write(data).unwrap())
-                }).unwrap();
-                println!("    {}", podcast.filename);
-                curl.perform().unwrap();
-                connection.execute("update podcast set downloaded = 1, downloaded_at = current_timestamp where id = ?1", &[&podcast.id]).unwrap();
+fn download(args: &ArgMatches, connection: &Connection) {
+    match args.value_of("id") {
+        None => {
+            println!("Download pending podcast:");
+            match common::get_pending_podcasts(connection) {
+                None => println!("{}", "    Nothing to download"),
+                Some(podcasts) => {
+                    for podcast in podcasts {
+                        println!("    {}", podcast.filename);
+                        common::download_podcast(connection, podcast);
+                    }
+                }
             }
+        }, 
+        Some(id) => {
+            let podcast = common::get_podcast(connection, id.parse::<i64>().unwrap()).unwrap();
+            println!(" Download: {}", podcast.filename);
+            common::download_podcast(connection, podcast);
         }
     }
 }

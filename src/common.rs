@@ -2,6 +2,12 @@ use std::net::TcpListener;
 use std::process;
 use rusqlite::Connection;
 use schema::*;
+use curl::easy::Easy;
+use std::time::Duration;
+use pbr::{ProgressBar, Units};
+use std::fs::File;
+use std::path::{Path};
+use std::io::Write; // needed for read_to_string trait
 
 // https://rosettacode.org/wiki/Category:Rust
 pub fn create_app_lock(port: u16) -> TcpListener {
@@ -27,6 +33,15 @@ pub fn getdownloaddir(connection: &Connection) -> String {
         return row.unwrap().get(0);
     }
     return "/tmp/".to_string();
+}
+
+pub fn get_podcast(connection: &Connection, id: i64) -> Option<Podcast>  {
+    let mut stmt = connection.prepare("select id, subscription_id, url, filename, title, content_text from podcast where id = ?1").unwrap();
+    let mut podcasts = stmt.query_map(&[&id], Podcast::map).unwrap();
+    match podcasts.next() {
+        Some(podcast) => Some(podcast.unwrap()),
+        None => None
+    }
 }
 
 pub fn get_podcasts(connection: &Connection, query: &str) -> Option<Vec<Podcast>>  {
@@ -68,4 +83,34 @@ pub fn get_subscription(connection: &Connection, id: &str) -> Option<Subscriptio
         Some(subscription) => Some(subscription.unwrap()),
         None => None
     }
+}
+
+pub fn download_podcast(connection: &Connection, podcast: Podcast) {
+    let mut curl = Easy::new();
+    let mut pb = ProgressBar::new(100);
+    pb.format("╢▌▌░╟");
+    pb.set_units(Units::Bytes);
+    pb.set_max_refresh_rate(Some(Duration::from_millis(100)));
+    curl.progress(true).unwrap();
+    curl.follow_location(true).unwrap();
+    curl.progress_function( move |a, b, _, _| {
+        pb.total = a as u64;
+        pb.set(b as u64);
+        true
+    }).unwrap();
+
+    let temp = getdownloaddir(connection) + podcast.filename.as_str();
+    let path = Path::new(&temp);
+
+    let mut file = match File::create(&path) {
+        Err(why) => panic!("couldn't create {}", why),
+        Ok(file) => file,
+    };
+    curl.url(&podcast.url).unwrap();
+    curl.write_function( move |data| {
+        Ok(file.write(data).unwrap())
+    }).unwrap();
+
+    curl.perform().unwrap();
+    connection.execute("update podcast set downloaded = 1, downloaded_at = current_timestamp where id = ?1", &[&podcast.id]).unwrap();
 }
