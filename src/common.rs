@@ -29,8 +29,8 @@ pub fn getdownloaddir(connection: &Connection) -> String {
     return "/tmp/".to_string();
 }
 
-pub fn get_pending_podcasts(connection: &Connection) -> Option<Vec<Podcast>>  {
-    let mut stmt = connection.prepare("select id, subscription_id, url, filename, title, content_text from podcast where downloaded = 0").unwrap();
+pub fn get_podcasts(connection: &Connection, query: &str) -> Option<Vec<Podcast>>  {
+    let mut stmt = connection.prepare(query).unwrap();
     if !stmt.exists(&[]).unwrap() {
         return None;
     }
@@ -41,6 +41,14 @@ pub fn get_pending_podcasts(connection: &Connection) -> Option<Vec<Podcast>>  {
         podcasts.push(podcast.unwrap());
     }
     Some(podcasts)
+}
+
+pub fn get_pending_podcasts(connection: &Connection) -> Option<Vec<Podcast>>  {
+    get_podcasts(connection, "select id, subscription_id, url, filename, title, content_text from podcast where downloaded = 0")
+}
+
+pub fn get_downloaded_podcasts(connection: &Connection) -> Option<Vec<Podcast>>  {
+    get_podcasts(connection, "select id, subscription_id, url, filename, title, content_text from podcast where downloaded = 0")
 }
 
 pub fn get_subscriptions(connection: &Connection) -> Option<Vec<Subscription>> {

@@ -72,6 +72,7 @@ fn main() {
             update(sub_matches, &connection, feed_id);
         },
         ("pending", Some(_)) => pending(&connection),
+        ("downloaded", Some(_)) => downloaded(&connection),
         ("download", Some(_)) => download(&connection),
         ("version", Some(_)) => version(),
         ("jsonfeed", Some(_)) => jsonfeed(&connection),
@@ -184,6 +185,18 @@ fn pending(connection: &Connection) {
     println!("Pending list:");
     match common::get_pending_podcasts(connection) {
         None => println!("{}", "    Nothing to download"),
+        Some(podcasts) => {
+            for podcast in podcasts {
+                println!("    {} ({})", podcast.filename, podcast.url);
+            }
+        }
+    }
+}
+
+fn downloaded(connection: &Connection) {
+    println!("Downloaded list:");
+    match common::get_downloaded_podcasts(connection) {
+        None => println!("{}", "    Nothing has been downloaded"),
         Some(podcasts) => {
             for podcast in podcasts {
                 println!("    {} ({})", podcast.filename, podcast.url);

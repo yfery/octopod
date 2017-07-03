@@ -23,9 +23,11 @@ subcommands:
             - id:
                 required: true
     - list:
-        about: list followed podcast
+        about: list of followed podcast feed
     - pending:
-        about: list followed podcast
+        about: list of podcast not downloaded yet
+    - downloaded:
+        about: list of podcast already downloaded
     - update:
         about: update podcast list
         args:

@@ -1,4 +1,6 @@
 #!bash
+# References:
+# - https://blog.heckel.xyz/2015/03/24/bash-completion-with-sub-commands-and-dynamic-options/
 
 _rusty()
 {
