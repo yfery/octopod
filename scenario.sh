@@ -7,4 +7,6 @@
 # RUST_BACKTRACE=1 target/debug/rusty --database /tmp/coin8.sqlite3 update
 
 
- RUST_BACKTRACE=1 target/debug/rusty --database /tmp/coin8.sqlite3 download 
+ #RUST_BACKTRACE=1 target/debug/rusty --database /tmp/coin8.sqlite3 subscribe -d http://valnuit.lepodcast.fr/rss
+ RUST_BACKTRACE=1 target/debug/rusty --database /tmp/coin8.sqlite3 download-dir ~/ 
+ RUST_BACKTRACE=1 target/debug/rusty --database /tmp/coin8.sqlite3 download 23 

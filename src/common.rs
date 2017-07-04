@@ -5,9 +5,10 @@ use schema::*;
 use curl::easy::Easy;
 use std::time::Duration;
 use pbr::{ProgressBar, Units};
-use std::fs::File;
+use std::fs::{File, OpenOptions};
 use std::path::{Path};
 use std::io::Write; // needed for read_to_string trait
+use std::fs;
 
 // https://rosettacode.org/wiki/Category:Rust
 pub fn create_app_lock(port: u16) -> TcpListener {
@@ -99,13 +100,34 @@ pub fn download_podcast(connection: &Connection, podcast: Podcast) {
         true
     }).unwrap();
 
-    let temp = getdownloaddir(connection) + podcast.filename.as_str();
+    let temp = getdownloaddir(connection) + podcast.filename.as_str() + ".downloading";
     let path = Path::new(&temp);
 
-    let mut file = match File::create(&path) {
-        Err(why) => panic!("couldn't create {}", why),
-        Ok(file) => file,
-    };
+    if Path::new(&(getdownloaddir(connection) + podcast.filename.as_str())).exists() {
+        println!("  File already downloaded");
+        return 
+    }
+
+    let mut file: File;
+    let mut options = OpenOptions::new();
+    // We want to write to our file as well as append new data to it.
+    options.write(true).append(true);
+    if Path::new(path).exists() {
+        let metadata = fs::metadata(path).unwrap();
+        curl.resume_from(metadata.len()).unwrap();
+
+        file = OpenOptions::new()
+            .write(true)
+            .append(true)
+            .open(&path)
+            .unwrap();
+
+    } else {
+        file = match File::create(&path) {
+            Err(why) => panic!("couldn't create {}", why),
+            Ok(file) => file
+        };
+    }
     curl.url(&podcast.url).unwrap();
     curl.write_function( move |data| {
         Ok(file.write(data).unwrap())
@@ -113,4 +135,5 @@ pub fn download_podcast(connection: &Connection, podcast: Podcast) {
 
     curl.perform().unwrap();
     connection.execute("update podcast set downloaded = 1, downloaded_at = current_timestamp where id = ?1", &[&podcast.id]).unwrap();
+    fs::rename(getdownloaddir(connection) + podcast.filename.as_str() + ".downloading", getdownloaddir(connection) + podcast.filename.as_str()).unwrap();
 }
