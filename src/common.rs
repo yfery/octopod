@@ -1,7 +1,10 @@
+
 use std::net::TcpListener;
 use std::process;
-use rusqlite::Connection;
+// use rusqlite::Connection;
 use schema::*;
+use models;
+use models::*;
 use curl::easy::Easy;
 use std::time::Duration;
 use pbr::{ProgressBar, Units};
@@ -9,6 +12,8 @@ use std::fs::{File, OpenOptions};
 use std::path::{Path};
 use std::io::Write; // needed for read_to_string trait
 use std::fs;
+use diesel::sqlite::SqliteConnection;
+use diesel::*; // useful for load & find
 
 // https://rosettacode.org/wiki/Category:Rust
 pub fn create_app_lock(port: u16) -> TcpListener {
@@ -27,66 +32,15 @@ pub fn remove_app_lock(socket: TcpListener) {
     drop(socket);
 }
 
-pub fn getdownloaddir(connection: &Connection) -> String {
-    let mut stmt = connection.prepare("select value from config where key = 'downloaddir'").unwrap();
-    let mut rows = stmt.query(&[]).unwrap();
-    while let Some(row) = rows.next() {
-        return row.unwrap().get(0);
-    }
-    return "/tmp/".to_string();
-}
-
-pub fn get_podcast(connection: &Connection, id: i64) -> Option<Podcast>  {
-    let mut stmt = connection.prepare("select id, subscription_id, url, filename, title, content_text from podcast where id = ?1").unwrap();
-    let mut podcasts = stmt.query_map(&[&id], Podcast::map).unwrap();
-    match podcasts.next() {
-        Some(podcast) => Some(podcast.unwrap()),
-        None => None
+pub fn getdownloaddir(connection: &SqliteConnection) -> String {
+    let config =  config::table.find("downloaddir").first::<Config>(connection).unwrap();
+    match config.value {
+        Some(path) => path,
+        None => "/tmp/".to_string()
     }
 }
 
-pub fn get_podcasts(connection: &Connection, query: &str) -> Option<Vec<Podcast>>  {
-    let mut stmt = connection.prepare(query).unwrap();
-    if !stmt.exists(&[]).unwrap() {
-        return None;
-    }
-    let rows = stmt.query_map(&[], Podcast::map).unwrap();
-
-    let mut podcasts = Vec::new();
-    for podcast in rows {
-        podcasts.push(podcast.unwrap());
-    }
-    Some(podcasts)
-}
-
-pub fn get_pending_podcasts(connection: &Connection) -> Option<Vec<Podcast>>  {
-    get_podcasts(connection, "select id, subscription_id, url, filename, title, content_text from podcast where downloaded = 0")
-}
-
-pub fn get_downloaded_podcasts(connection: &Connection) -> Option<Vec<Podcast>>  {
-    get_podcasts(connection, "select id, subscription_id, url, filename, title, content_text from podcast where downloaded = 1")
-}
-
-pub fn get_subscriptions(connection: &Connection) -> Option<Vec<Subscription>> {
-    let mut stmt = connection.prepare("select id, url, label, coalesce(last_build_date, 'Nothing') from subscription ").unwrap();
-    let rows = stmt.query_map(&[], Subscription::map).unwrap();
-
-    let mut subscriptions = Vec::new();
-    for subscription in rows {
-        subscriptions.push(subscription.unwrap());
-    }
-    Some(subscriptions)
-}
-pub fn get_subscription(connection: &Connection, id: &str) -> Option<Subscription> {
-    let mut stmt = connection.prepare("select id, url, label, coalesce(last_build_date, 'Nothing') from subscription where id = ?1").unwrap();
-    let mut subscriptions = stmt.query_map(&[&id], Subscription::map).unwrap();
-    match subscriptions.next() {
-        Some(subscription) => Some(subscription.unwrap()),
-        None => None
-    }
-}
-
-pub fn download_podcast(connection: &Connection, podcast: Podcast) {
+pub fn download_podcast(connection: &SqliteConnection, podcast: Podcast) {
     let mut curl = Easy::new();
     let mut pb = ProgressBar::new(100);
     pb.format("╢▌▌░╟");
@@ -134,6 +88,7 @@ pub fn download_podcast(connection: &Connection, podcast: Podcast) {
     }).unwrap();
 
     curl.perform().unwrap();
-    connection.execute("update podcast set downloaded = 1, downloaded_at = current_timestamp where id = ?1", &[&podcast.id]).unwrap();
+    // TODO
+    // connection.execute("update podcast set downloaded = 1, downloaded_at = current_timestamp where id = ?1", &[&podcast.id]).unwrap();
     fs::rename(getdownloaddir(connection) + podcast.filename.as_str() + ".downloading", getdownloaddir(connection) + podcast.filename.as_str()).unwrap();
 }
