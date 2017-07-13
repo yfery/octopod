@@ -30,11 +30,6 @@ pub struct NewSubscription<'a> {
 // TODO last_insert_rowid => https://github.com/diesel-rs/diesel/issues/771
 /*
 impl Subscription {
-    pub fn delete(&self, connection: &SqliteConnection) {
-        connection.execute("delete from subscription where id = ?1", &[&self.id]).unwrap();
-        connection.execute("delete from podcast where subscription_id = ?1", &[&self.id]).unwrap();
-    }
-
     pub fn from_xml_feed(&self, connection: &SqliteConnection, body: Vec<u8>, as_downloaded: bool) -> Result<&str, Error> {
         let mut previous_insert_rowid: i32 = 0;
 

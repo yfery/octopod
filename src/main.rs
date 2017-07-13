@@ -21,12 +21,10 @@ mod schema;
 mod common;
 mod models;
 
-use std::process;
 use clap::{App, ArgMatches};
 use schema::*;
 use models::*;
 use url::Url;
-// use rusqlite::Connection;
 use std::fs::create_dir;
 use std::path::{Path};
 use std::env::home_dir;
@@ -38,7 +36,6 @@ use std::str::FromStr;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 use dotenv::dotenv;
-use chrono::prelude::*;
 
 embed_migrations!("migrations/");
 const VERSION: &'static str = env!("RUSTY_VERSION");
@@ -68,7 +65,7 @@ fn main() {
     let connection = SqliteConnection::establish(&database_url).expect(&format!("Error connecting to {}", database_url));
     // without output
     // embedded_migrations::run(&connection);
-    embedded_migrations::run_with_output(&connection, &mut std::io::stdout());
+    embedded_migrations::run_with_output(&connection, &mut std::io::stdout()).unwrap();
 
     match matches.subcommand() {
         ("subscribe", Some(sub_matches)) => subscribe(sub_matches, &connection),
@@ -100,7 +97,6 @@ fn subscribe(args: &ArgMatches, connection: &SqliteConnection) {
             let results = subscription::table.filter(subscription::url.eq(&url.as_str())).load::<Subscription>(connection) ;
             if results.unwrap().len() == 0 {
                 diesel::insert(&subscription).into(subscription::table).execute(connection).expect("Error saving");
-                // connection.execute("insert into subscription (url, label, last_build_date) values (?1, '', '')", &[&subscription.url]).unwrap();
             } else {
                 println!("    Feed already subscribed to");
                 return
@@ -125,9 +121,8 @@ fn unsubscribe(args: &ArgMatches, connection: &SqliteConnection) {
             println!("Sure? [y/N]"); 
             stdin.read_exact(&mut buffer).unwrap();
             if buffer[0] == 121u8 { // 121 is ascii code for 'y'
-                // TODO
-                diesel::delete(subscription::table.find(&id.parse::<i32>().unwrap())).execute(connection).expect("Error deleting posts");
-                // subscription.delete(connection);
+                diesel::delete(podcast::table.filter(podcast::subscription_id.eq(&id.parse::<i32>().unwrap()))).execute(connection).expect("Error deleting podcast");
+                diesel::delete(subscription::table.find(&id.parse::<i32>().unwrap())).execute(connection).expect("Error deleting subscription");
                 println!("Unsubscribed from: {}", subscription.url);
             }
         },
@@ -188,7 +183,6 @@ fn list(connection: &SqliteConnection) {
         fn pending(connection: &SqliteConnection) {
             println!("Pending list:");
             match podcast::table.filter(podcast::downloaded.eq(0)).load::<Podcast>(connection) {
-                // match common::get_pending_podcasts(connection) {
                 Err(_) => println!("{}", "    Nothing to download"),
                 Ok(podcasts) => {
                     for podcast in podcasts {
