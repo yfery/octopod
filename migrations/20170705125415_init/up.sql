@@ -13,7 +13,7 @@ create table if not exists podcast (
     url text not null,
     filename text not null,
     title text not null,
-    content_text text not null,
+    content_text text,
     downloaded integer default 0 not null,
     downloaded_at timestamp,
     created_at timestamp default current_timestamp not null,

@@ -5,10 +5,12 @@ use url::Url;
 use diesel::sqlite::SqliteConnection;
 use chrono;
 use diesel::prelude::*;
-use schema::subscription;
+use diesel::insert;
+use diesel::update;
+use schema::*;
 
-// derive allow use of unwrap() on Subscription
-#[derive(Debug, Clone, Queryable, Serialize, Deserialize)]
+#[derive(Debug, Clone, Queryable, Serialize, Deserialize, Identifiable)]
+#[table_name = "subscription"]
 pub struct Subscription {
     pub id: i32,
     pub url:  String,
@@ -20,34 +22,30 @@ pub struct Subscription {
 #[derive(Insertable)]
 #[table_name="subscription"]
 pub struct NewSubscription<'a> {
-    // pub id: &'a i32,
     pub url:  &'a str,
-    // pub label: &'a str,
-    // pub last_build_date: &'a String,
-    // pub created_at: &'a chrono::NaiveDateTime
 }
 
-// TODO last_insert_rowid => https://github.com/diesel-rs/diesel/issues/771
-/*
 impl Subscription {
     pub fn from_xml_feed(&self, connection: &SqliteConnection, body: Vec<u8>, as_downloaded: bool) -> Result<&str, Error> {
-        let mut previous_insert_rowid: i32 = 0;
 
         let channel = match Channel::from_str(str::from_utf8(&body).unwrap()) { // parse rss into channel
             Err(e) =>  return Err(e),
             Ok(channel) => channel
         };
 
-        // last_build_date isn't a mandatory field 
         match channel.last_build_date() {
             None => (),
             Some(date) => 
-                if date == self.last_build_date {
+                if Some(date.to_string()) == self.clone().last_build_date {
                     return Ok("Already up to date")
                 }
         };
 
-        connection.execute("update subscription set label = ?1, last_build_date = ?2 where id = ?3", &[&channel.title(), &channel.last_build_date(), &self.id]).unwrap(); // update podcast feed name
+        let _ = update(self)
+            .set((subscription::label.eq(&channel.title()),
+                 subscription::last_build_date.eq(&channel.last_build_date())))
+            .execute(connection)
+            .expect(&format!("Unable to find post {}", self.id));
 
         for item in channel.items() {
             let url = Url::parse(item.enclosure().unwrap().url()).unwrap();
@@ -63,18 +61,17 @@ impl Subscription {
                 filename = segment.to_string();
             }
 
-            let podcast = Podcast { id: 0, subscription_id: self.id, url: url.as_str().to_string(), filename: filename, title: item.title().unwrap().to_string(), content_text: String::new()};
-            connection.execute("insert or ignore into podcast (subscription_id, url, filename, downloaded, title, content_text) values (?1, ?2, ?3, ?4, ?5, ?6)", &[&podcast.subscription_id, &podcast.url, &podcast.filename, &as_downloaded, &podcast.title, &podcast.content_text]).unwrap();
-            if previous_insert_rowid != connection.last_insert_rowid() {
+            let podcast = NewPodcast { subscription_id: self.id, url: url.as_str(), filename: filename.as_str(), title: item.title().unwrap(), downloaded: as_downloaded  as i32};
+            let results = podcast::table.filter(podcast::url.eq(&url.as_str())).load::<Podcast>(connection) ;
+            if results.unwrap().len() == 0 {
+                insert(&podcast).into(podcast::table).execute(connection).expect("Error saving");
                 println!("    New podcast added: {:?}", podcast.filename);
             }
-            previous_insert_rowid = connection.last_insert_rowid();
         }
 
         Ok("updated")
     }
 }
-*/
 
 #[derive(Debug, Queryable, Serialize, Deserialize)]
 pub struct Podcast {
@@ -83,13 +80,24 @@ pub struct Podcast {
     pub url:  String,
     pub filename: String,
     pub title: String,
-    pub content_text: String,
+    pub content_text: Option<String>,
     pub downloaded: i32,
     pub downloaded_at: Option<chrono::NaiveDateTime>,
     pub created_at: chrono::NaiveDateTime
 }
 
-#[derive(Debug, Queryable, Serialize, Deserialize)]
+#[derive(Insertable)]
+#[table_name="podcast"]
+pub struct NewPodcast<'a> {
+    pub subscription_id: i32,
+    pub url:  &'a str,
+    pub filename: &'a str,
+    pub title: &'a str,
+    pub downloaded: i32,
+}
+
+#[derive(Debug, Queryable, Serialize, Deserialize, Insertable)]
+#[table_name = "config"]
 pub struct Config {
     pub key: String, 
     pub value: Option<String>,

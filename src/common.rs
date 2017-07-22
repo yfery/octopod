@@ -3,7 +3,6 @@ use std::net::TcpListener;
 use std::process;
 // use rusqlite::Connection;
 use schema::*;
-use models;
 use models::*;
 use curl::easy::Easy;
 use std::time::Duration;
@@ -33,10 +32,9 @@ pub fn remove_app_lock(socket: TcpListener) {
 }
 
 pub fn getdownloaddir(connection: &SqliteConnection) -> String {
-    let config =  config::table.find("downloaddir").first::<Config>(connection).unwrap();
-    match config.value {
-        Some(path) => path,
-        None => "/tmp/".to_string()
+    match config::table.find("downloaddir").first::<Config>(connection) {
+        Ok(config) => config.value.unwrap(),
+        Err(_) => "/tmp/".to_string()
     }
 }
 
@@ -88,7 +86,15 @@ pub fn download_podcast(connection: &SqliteConnection, podcast: Podcast) {
     }).unwrap();
 
     curl.perform().unwrap();
-    // TODO
-    // connection.execute("update podcast set downloaded = 1, downloaded_at = current_timestamp where id = ?1", &[&podcast.id]).unwrap();
+        let _ = update(podcast::table.filter(podcast::id.eq(&podcast.id)))
+            .set((podcast::downloaded.eq(1),
+                 podcast::downloaded_at.eq(expression::dsl::now.nullable())))
+            .execute(connection)
+            .expect(&format!("Unable to find podcast {}", podcast.id));
     fs::rename(getdownloaddir(connection) + podcast.filename.as_str() + ".downloading", getdownloaddir(connection) + podcast.filename.as_str()).unwrap();
+}
+
+pub fn last_insert_rowid(connection: &SqliteConnection) -> i32 {
+    no_arg_sql_function!(last_insert_rowid, types::Integer);
+    select(last_insert_rowid).first(connection).unwrap()
 }
