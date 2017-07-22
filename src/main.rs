@@ -38,7 +38,7 @@ use diesel::sqlite::SqliteConnection;
 use dotenv::dotenv;
 
 embed_migrations!("migrations/");
-const VERSION: &'static str = env!("RUSTY_VERSION");
+const VERSION: &'static str = env!("OCTOPOD_VERSION");
 
 fn main() {
     let lock_socket = common::create_app_lock(12345); // https://rosettacode.org/wiki/Category:Rust
@@ -53,12 +53,12 @@ fn main() {
 
     if matches.is_present("database") { // get path from command line 
         database_url = matches.value_of("database").unwrap().to_string();
-    } else { // if env var exists use it or put database file into ~/.config/rusty/rusty.sqlite3
-        let mut db_path = home_dir().expect("/tmp/").into_os_string().into_string().unwrap() + "/.config/rusty";
+    } else { // if env var exists use it or put database file into ~/.config/octopod/octopod.sqlite3
+        let mut db_path = home_dir().expect("/tmp/").into_os_string().into_string().unwrap() + "/.config/octopod";
         if !Path::new(&db_path).exists() { // If path doesn't exist we create it
             create_dir(&db_path).unwrap();
         }
-        db_path = db_path + "/rusty.sqlite3";
+        db_path = db_path + "/octopod.sqlite3";
         database_url = env::var("DATABASE_URL").expect(db_path.as_str());
     }
 
@@ -235,5 +235,5 @@ fn download(args: &ArgMatches, connection: &SqliteConnection) {
     }
 
     fn version() {
-        println!("Rusty {}", VERSION);
+        println!("Octopod {}", VERSION);
     }

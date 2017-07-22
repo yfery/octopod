@@ -2,10 +2,10 @@
 # References:
 # - https://blog.heckel.xyz/2015/03/24/bash-completion-with-sub-commands-and-dynamic-options/
 
-_rusty()
+_octopod()
 {
     local cur firstword
-    firstword=$(_rusty_get_firstword) 
+    firstword=$(_octopod_get_firstword) 
 
     GLOBAL_COMMANDS="subscribe unsubscribe list download-dir pending download download-dir help jsonfeed update version"
 
@@ -35,7 +35,7 @@ _rusty()
 
 # Determines the first non-option word of the command line. This
 # is usually the command
-_rusty_get_firstword() {
+_octopod_get_firstword() {
     local firstword i
 
     firstword=
@@ -49,4 +49,4 @@ _rusty_get_firstword() {
     echo "$firstword"
 }
 
-complete -o nospace -F _rusty rusty
+complete -o nospace -F _octopod octopod

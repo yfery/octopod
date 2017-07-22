@@ -1,12 +1,12 @@
 #Paths
-NAME=rusty
+NAME=octopod
 VERSION=$(shell git describe --tags)
 BUILD=/tmp
 PKG=$(BUILD)/pkg-debian
 OPENSSL=/tmp/openssl-1.0.1u/
 
 define CONTROL_FILE
-Package: rusty
+Package: octopod
 Version: $(VERSION)
 Maintainer: Yann Fery yann@fery.me
 Priority: optional
@@ -17,13 +17,13 @@ endef
 export CONTROL_FILE
 
 build: src/*
-	RUSTY_VERSION=$(VERSION) cargo build 
+	OCTOPOD_VERSION=$(VERSION) cargo build 
 
 build-release: src/*
 	export OPENSSL_INCLUDE_DIR=/usr/include/openssl/; \
 	export OPENSSL_LIB_DIR=/usr/lib/x86_64-linux-gnu/; \
 	export CC=/usr/bin/cc; \
-	RUSTY_VERSION=$(VERSION) cargo build --release 
+	OCTOPOD_VERSION=$(VERSION) cargo build --release 
 
 build-release-armv7: src/*
 	export OPENSSL_DIR=$(OPENSSL); \
@@ -32,7 +32,7 @@ build-release-armv7: src/*
 	export LDFLAGS="-L$(OPENSSL)"; \
 	export LIBS="-lssl -lcrypto"; \
 	export CC=arm-linux-gnueabihf-gcc; \
-	RUSTY_VERSION=$(VERSION) cargo build --release --target armv7-unknown-linux-gnueabihf
+	OCTOPOD_VERSION=$(VERSION) cargo build --release --target armv7-unknown-linux-gnueabihf
 
 package-control:
 	rm -r $(PKG)
@@ -40,17 +40,17 @@ package-control:
 	mkdir -p $(PKG)/usr/bin/
 	echo "$$CONTROL_FILE" > $(PKG)/DEBIAN/control
 	mkdir -p $(PKG)/etc/bash_completion.d/
-	cp assets/completion.bash $(PKG)/etc/bash_completion.d/rusty
+	cp assets/completion.bash $(PKG)/etc/bash_completion.d/$(NAME)
 
 package: package-control build-release
-	cp target/release/rusty $(PKG)/usr/bin/
+	cp target/release/$(NAME) $(PKG)/usr/bin/
 	@# Make checksum
 	rm -f $(PKG)/DEBIAN/md5sums 
 	find $(PKG)/ -type f ! -regex '.*.hg.*' ! -regex '.*?debian-binary.*' ! -regex '.*?DEBIAN.*' -printf '$(PKG)/%P ' | xargs md5sum | sed 's/build\/pkg-debian\///' > $(PKG)/DEBIAN/md5sums
 	dpkg -b $(PKG)/ build/$(NAME)-$(shell uname -m)-$(VERSION).deb
 
 package-armv7: package-control build-release-armv7
-	cp target/armv7-unknown-linux-gnueabihf/release/rusty $(PKG)/usr/bin/
+	cp target/armv7-unknown-linux-gnueabihf/release/$(NAME) $(PKG)/usr/bin/
 	@# Make checksum
 	rm -f $(PKG)/DEBIAN/md5sums 
 	find $(PKG)/ -type f ! -regex '.*.hg.*' ! -regex '.*?debian-binary.*' ! -regex '.*?DEBIAN.*' -printf '$(PKG)/%P ' | xargs md5sum | sed 's/build\/pkg-debian\///' > $(PKG)/DEBIAN/md5sums

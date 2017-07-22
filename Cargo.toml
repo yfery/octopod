@@ -1,5 +1,5 @@
 [package]
-name = "rusty"
+name = "octopod"
 version = "0.1.0"
 authors = ["Yann <yann@fery.me>"]
 

@@ -1,6 +1,6 @@
 Goal: learning Rust 
 
-# Rusty
+# octopod
 
 Command line application for managing podcast feeds, with sqlite backend. 
 
@@ -8,25 +8,25 @@ Command line application for managing podcast feeds, with sqlite backend.
 
 First, subscribe to a podcast feed. Here `-d` flag mark podcast as downloaded, without that flag every podcast will be downloaded
 
-    rusty subscribe -d https://my.podcast.com/rss/feed/
+    octopod subscribe -d https://my.podcast.com/rss/feed/
 
 You can list every podcast feed you have subscribed to. Useful for getting feed id needed for unsubscribing.
 
-    rusty list
+    octopod list
 
 For setting directory where podcasts will be downloaded (default is temp directory)
 
-    rusty download-dir ~/podcast/
+    octopod download-dir ~/podcast/
 
 Without argument, print current download directory
 
-    rusty download-dir
+    octopod download-dir
 
 For updating every feeds, listing podcasts to download and download them
 
-    rusty update
-    rusty pending
-    rusty download
+    octopod update
+    octopod pending
+    octopod download
 
 ## Building
 
