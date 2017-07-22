@@ -4,7 +4,10 @@ Rusty depends on OpenSSL (or LibreSSL) and Sqlite3. The libraries and headers ne
 
 On debian/ubuntu/raspbian
 
-    sudo apt install pkg-config libssl-dev libsqlite3-0 
+    #sudo apt install pkg-config libssl-dev libsqlite3-0 
+    sudo apt install pkg-config libssl-dev libsqlite3-dev 
+    cargo install diesel_cli --no-default-features --features sqlite
+    diesel migration run
     make build-release
 
 Makefile is prefered as it initialises some environment variable before doing a `cargo build`
