@@ -27,7 +27,7 @@ build-release: src/*
 	OCTOPOD_VERSION=$(VERSION) cargo build --release 
 
 package-control:
-	rm -r $(PKG)
+	rm -fr $(PKG)
 	mkdir -p $(PKG)/DEBIAN
 	mkdir -p $(PKG)/usr/bin/
 	echo "$$CONTROL_FILE" > $(PKG)/DEBIAN/control
