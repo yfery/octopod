@@ -10,6 +10,9 @@ rust:
   - beta
   - stable
 
+before_script:
+  - cargo install diesel_cli --no-default-features --features sqlite
+
 # The main build
 script:
   - make build-release
