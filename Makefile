@@ -23,16 +23,8 @@ build-release: src/*
 	export OPENSSL_INCLUDE_DIR=/usr/include/openssl/; \
 	export OPENSSL_LIB_DIR=/usr/lib/x86_64-linux-gnu/; \
 	export CC=/usr/bin/cc; \
+	diesel migration run
 	OCTOPOD_VERSION=$(VERSION) cargo build --release 
-
-build-release-armv7: src/*
-	export OPENSSL_DIR=$(OPENSSL); \
-	export OPENSSL_LIB_DIR=$(OPENSSL); \
-	export CPPFLAGS="-I$(OPENSSL)include/"; \
-	export LDFLAGS="-L$(OPENSSL)"; \
-	export LIBS="-lssl -lcrypto"; \
-	export CC=arm-linux-gnueabihf-gcc; \
-	OCTOPOD_VERSION=$(VERSION) cargo build --release --target armv7-unknown-linux-gnueabihf
 
 package-control:
 	rm -r $(PKG)
@@ -48,12 +40,3 @@ package: package-control build-release
 	rm -f $(PKG)/DEBIAN/md5sums 
 	find $(PKG)/ -type f ! -regex '.*.hg.*' ! -regex '.*?debian-binary.*' ! -regex '.*?DEBIAN.*' -printf '$(PKG)/%P ' | xargs md5sum | sed 's/build\/pkg-debian\///' > $(PKG)/DEBIAN/md5sums
 	dpkg -b $(PKG)/ build/$(NAME)-$(shell uname -m)-$(VERSION).deb
-
-package-armv7: package-control build-release-armv7
-	cp target/armv7-unknown-linux-gnueabihf/release/$(NAME) $(PKG)/usr/bin/
-	@# Make checksum
-	rm -f $(PKG)/DEBIAN/md5sums 
-	find $(PKG)/ -type f ! -regex '.*.hg.*' ! -regex '.*?debian-binary.*' ! -regex '.*?DEBIAN.*' -printf '$(PKG)/%P ' | xargs md5sum | sed 's/build\/pkg-debian\///' > $(PKG)/DEBIAN/md5sums
-	dpkg -b $(PKG)/ build/$(NAME)-armv7-$(VERSION).deb
-
-packages: package-armv7 package

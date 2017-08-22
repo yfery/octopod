@@ -15,9 +15,7 @@ Makefile is prefered as it initialises some environment variable before doing a 
 ## Makefile options 
 
 - `make build`: build a debug version
-- `make build-release-armv7`: build an armv7 version on other host with cross-compiling method
 - `make package`: build and create a debian package
-- `make package-armv7`: build and create a debian package for armv7 with cross-compiling
 
 ## Misc
 
