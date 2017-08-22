@@ -1,5 +1,7 @@
 # Octopod
 
+[![Build Status](https://travis-ci.org/yfery/octopod.svg?branch=master)](https://travis-ci.org/yfery/octopod)
+
 Command line application for managing podcast feeds, with sqlite backend. 
 
 ## Workflow
