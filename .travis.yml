@@ -12,4 +12,5 @@ rust:
 
 # The main build
 script:
-  - cargo build
+  - make build-release
+  - make package
