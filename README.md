@@ -1,6 +1,4 @@
-Goal: learning Rust 
-
-# octopod
+# Octopod
 
 Command line application for managing podcast feeds, with sqlite backend. 
 
