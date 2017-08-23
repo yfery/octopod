@@ -32,6 +32,7 @@ before_script:
 
 # The main build
 script:
+  - make build
   - make build-release
   - make package
 
