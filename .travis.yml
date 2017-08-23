@@ -19,8 +19,8 @@ addons:
 
 # Run builds for all the supported trains
 rust:
-  - nightly
-  - beta
+  #- nightly
+  #- beta
   - stable
 
 # Update distribution packages before anything else.

@@ -17,6 +17,7 @@ endef
 export CONTROL_FILE
 
 build: src/*
+	diesel migration run
 	OCTOPOD_VERSION=$(VERSION) cargo build 
 
 build-release: src/*
@@ -40,3 +41,6 @@ package: package-control build-release
 	rm -f $(PKG)/DEBIAN/md5sums 
 	find $(PKG)/ -type f ! -regex '.*.hg.*' ! -regex '.*?debian-binary.*' ! -regex '.*?DEBIAN.*' -printf '$(PKG)/%P ' | xargs md5sum | sed 's/build\/pkg-debian\///' > $(PKG)/DEBIAN/md5sums
 	dpkg -b $(PKG)/ build/$(NAME)-$(shell uname -m)-$(VERSION).deb
+
+test: src/*
+	OCTOPOD_VERSION=$(VERSION) cargo test 
