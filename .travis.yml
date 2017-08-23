@@ -35,9 +35,10 @@ script:
   - make build
   - make build-release
   - make package
+  - sudo apt install ./build/octopod*
 
 after_success:
-    # Coverage report
+  # Coverage report
   - |
       if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_RUST_VERSION" == "stable" ]]; then
         wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz &&
