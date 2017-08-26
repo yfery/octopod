@@ -29,6 +29,13 @@ For updating every feeds, listing podcasts to download and download them
     octopod pending
     octopod download
 
+## Download again a podcast
+
+List podcast for finding podcast id 
+
+    octopod downloaded | grep my_podcast
+    octopod download 412
+
 ## Building
 
 See `doc/building.md`
