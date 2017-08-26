@@ -29,6 +29,7 @@ git = "https://github.com/seanmonstar/reqwest"
 rev = "478309e03f9f902d592d9b5ec6cab2a476c6b069"
 features = ["unstable"]
 
+# wait for PR inclusion https://github.com/a8m/pb/issues/45
 [dependencies.pbr]
 git = "https://github.com/yfery/pb"
 branch = "FinalRedrawWhenMaxRefreshRateSet"
