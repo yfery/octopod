@@ -59,7 +59,10 @@ fn main() {
             create_dir(&db_path).unwrap();
         }
         db_path = db_path + "/octopod.sqlite3";
-        database_url = env::var("DATABASE_URL").expect(db_path.as_str());
+        match env::var("DATABASE_URL") {
+            Ok(p) => database_url = p,
+            Err(_) => database_url = db_path.to_string()
+        }
     }
 
     let connection = SqliteConnection::establish(&database_url).expect(&format!("Error connecting to {}", database_url));

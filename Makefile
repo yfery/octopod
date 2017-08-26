@@ -3,7 +3,6 @@ NAME=octopod
 VERSION=$(shell git describe --tags)
 BUILD=/tmp
 PKG=$(BUILD)/pkg-debian
-OPENSSL=/tmp/openssl-1.0.1u/
 
 define CONTROL_FILE
 Package: octopod
