@@ -11,7 +11,7 @@ Version: $(VERSION)
 Maintainer: Yann Fery yann@fery.me
 Priority: optional
 Architecture: all
-Depends: libssl1.0.0 (>= 1.0.0) | libssl1.0.2 (>= 1.0.2), libsqlite3-0 (>=3.8)
+Depends: libssl1.0.2 (>= 1.0.2), libsqlite3-0 (>=3.8)
 Description: Managing podcast feeds
 endef
 export CONTROL_FILE
