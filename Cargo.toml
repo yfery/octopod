@@ -15,7 +15,6 @@ mime = "0.3.2"
 slog = "2.0.5"
 slog-term = "2.0.1"
 slog-async = "2.0.1"
-pbr = "1.0.0"
 time = "0.1.37"
 serde = "1.0"
 serde_json = "1.0"
@@ -29,3 +28,7 @@ chrono = { version = "0.4.0",  features = ["serde", "rustc-serialize"] }
 git = "https://github.com/seanmonstar/reqwest"
 rev = "478309e03f9f902d592d9b5ec6cab2a476c6b069"
 features = ["unstable"]
+
+[dependencies.pbr]
+git = "https://github.com/yfery/pb"
+branch = "FinalRedrawWhenMaxRefreshRateSet"
