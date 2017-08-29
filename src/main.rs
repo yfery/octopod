@@ -76,7 +76,7 @@ fn main() {
             let feed_id = sub_matches.value_of("id").unwrap_or("0").parse::<i32>().unwrap();
             update(sub_matches, &connection, feed_id);
         },
-        ("pending", Some(_)) => pending(&connection),
+        ("pending", Some(sub_matches)) => pending(sub_matches, &connection),
         ("downloaded", Some(_)) => downloaded(&connection),
         ("download", Some(sub_matches)) => download(sub_matches, &connection),
         ("version", Some(_)) => version(),
@@ -178,13 +178,21 @@ fn update(args: &ArgMatches, connection: &SqliteConnection, feed_id: i32) {
     }
 }
 
-fn pending(connection: &SqliteConnection) {
-    println!("Pending list:");
+fn pending(args: &ArgMatches, connection: &SqliteConnection) {
     match podcast::table.filter(podcast::downloaded.eq(0)).load::<Podcast>(connection) {
-        Err(_) => println!("{}", "    Nothing to download"),
+        Err(e) => println!("{}", e),
         Ok(podcasts) => {
-            for podcast in podcasts {
-                println!("    {}: {} ({})", podcast.id, podcast.filename, podcast.url);
+            if args.is_present("counter") {
+                println!("{}", podcasts.len());
+            } else {
+                println!("Pending list:");
+                if podcasts.len() > 0 {
+                    for podcast in podcasts {
+                        println!("    {}: {} ({})", podcast.id, podcast.filename, podcast.url);
+                    }
+                } else {
+                    println!("{}", "    Nothing to download");
+                }
             }
         }
     }

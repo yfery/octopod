@@ -26,6 +26,10 @@ subcommands:
         about: list of followed podcast feed
     - pending:
         about: list of podcast not downloaded yet
+        args:
+            - counter:
+                short: c
+                required: false
     - downloaded:
         about: list of podcast already downloaded
     - update:
